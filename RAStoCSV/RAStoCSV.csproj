@@ -6,7 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{C755E3D0-438A-4BA2-90EF-FF838A4AA20E}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>RAStoCSV</RootNamespace>
+    <RootNamespace>HirosakiUniversity.Aldente.RAStoCSV</RootNamespace>
     <AssemblyName>RAStoCSV</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>

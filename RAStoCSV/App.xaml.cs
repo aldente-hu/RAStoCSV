@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace RAStoCSV
+namespace HirosakiUniversity.Aldente.RAStoCSV
 {
     /// <summary>
     /// App.xaml の相互作用ロジック
