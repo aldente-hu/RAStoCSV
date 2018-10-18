@@ -11,7 +11,7 @@
 										Executed="Load_Executed"/>
 	</Window.CommandBindings>
 	<Grid>
-		<TabControl HorizontalAlignment="Left" Height="378" Margin="10,28,0,0" VerticalAlignment="Top" Width="772">
+		<TabControl HorizontalAlignment="Left" Height="378" Margin="10,28,0,0" VerticalAlignment="Top" Width="566">
 			<TabItem Header="ファイルを選択">
 				<Grid Background="#FFE5E5E5">
 					<Button Content="読み込む" HorizontalAlignment="Left" Height="61" Margin="49,38,0,0" VerticalAlignment="Top" Width="262"
@@ -22,6 +22,12 @@
 				<Grid Background="#FFE5E5E5"/>
 			</TabItem>
 		</TabControl>
+		<GroupBox Header="出力単位" HorizontalAlignment="Left" Height="184" Margin="594,30,0,0" VerticalAlignment="Top" Width="155">
+			<StackPanel>
+				<RadioButton Content="カウント数" IsChecked="True" />
+				<RadioButton Name="radioButtonCps" Content="カウント率(cps)" />
+			</StackPanel>
+		</GroupBox>
 
 	</Grid>
 </Window>

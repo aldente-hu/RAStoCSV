@@ -93,6 +93,7 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 			if (line != "*RAS_DATA_START")
 			{
 				// RASデータファイルではない！
+				throw new RasFormatException("RASファイルのフォーマットが不適切です． #000");
 			}
 
 
@@ -114,9 +115,11 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 								seriesData = new SeriesData();
 								currentState = RasReadingState.Header;
 								break;
+							case "*RAS_DATA_END":
+								break;
 							default:
 								// 何かオカシイ？
-								break;
+								throw new RasFormatException("RASファイルのフォーマットが不適切です． #010");
 						}
 						break;
 					case RasReadingState.AfterHeader:
@@ -128,37 +131,49 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 								break;
 							default:
 								// 何かオカシイ？
-								break;
+								throw new RasFormatException("RASファイルのフォーマットが不適切です． #011");
 						}
 						break;
 					case RasReadingState.Header:
 						var cols = line.Split(headerSeparators);
-						switch (cols.First())
+						try
 						{
-							case "*RAS_HEADER_END":
-								// ヘッダモード終了．
-								currentState = RasReadingState.AfterHeader;
-								break;
-							// 必要なヘッダを読み取る．
-							case "*MEAS_SCAN_AXIS_X_INTERNAL":
-								seriesData.AxisName = cols[1].Trim('"');
-								break;
-							case "*MEAS_SCAN_SPEED":
-								var speed = decimal.Parse(cols[1].Trim('"'));
-								seriesData.ScanSpeed = speed;
-								break;
-							case "*MEAS_SCAN_SPEED_UNIT":
-								// "deg/min"以外にあるのかな？
-								break;
-							//case "*MEAS_SCAN_SPEED_USER":
-							//	break;
-							case "*MEAS_SCAN_STEP":
-								var step = decimal.Parse(cols[1].Trim('"'));
-								seriesData.ScanStep = step;
-								break;
-							default:
-								// 興味のないヘッダなので，何もしない．
-								break;
+							switch (cols.First())
+							{
+								case "*RAS_HEADER_END":
+									// ヘッダモード終了．
+									currentState = RasReadingState.AfterHeader;
+									break;
+								// 必要なヘッダを読み取る．
+								case "*MEAS_SCAN_AXIS_X_INTERNAL":
+									seriesData.AxisName = cols[1].Trim('"');
+									break;
+								case "*MEAS_SCAN_SPEED":
+									var speed = decimal.Parse(cols[1].Trim('"'));
+									seriesData.ScanSpeed = speed;
+									break;
+								case "*MEAS_SCAN_SPEED_UNIT":
+									// "deg/min"以外にあるのかな？
+									break;
+								//case "*MEAS_SCAN_SPEED_USER":
+								//	break;
+								case "*MEAS_SCAN_STEP":
+									var step = decimal.Parse(cols[1].Trim('"'));
+									seriesData.ScanStep = step;
+									break;
+								case "*RAS_HEADER_START":
+								case "*RAS_INT_START":
+								case "*RAS_INT_END":
+								case "*RAS_DATA_END":
+									throw new RasFormatException("RASファイルのフォーマットが不適切です． #013");
+								default:
+									// 興味のないヘッダなので，何もしない．
+									break;
+							}
+						}
+						catch (IndexOutOfRangeException)
+						{
+							throw new RasFormatException("RASファイルのフォーマットが不適切です． #012");
 						}
 						break;
 					case RasReadingState.Data:
@@ -169,17 +184,21 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 								MyData.Add(seriesData);
 								currentState = RasReadingState.Neutral;
 								break;
+							case "*RAS_INT_START":
+							case "*RAS_HEADER_START":
+							case "*RAS_HEADER_END":
+							case "*RAS_DATA_END":
+								throw new RasFormatException("RASファイルのフォーマットが不適切です． #021");
 							default:
 								// データの読み取り
-								// データを読み取るなら...
 								cols = line.Split(' ');
-								if (cols.Length > 2)
+								try
 								{
 									seriesData.Add(Decimal.Parse(cols[0]), new CountData(decimal.Parse(cols[1]), decimal.Parse(cols[2])));
 								}
-								else
+								catch
 								{
-									// データ形式がイクナイ．
+									throw new RasFormatException("RASファイルのフォーマットが不適切です． #020");
 								}
 								break;
 						}
@@ -223,30 +242,54 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 		#endregion
 
 
-		public async Task Output(StreamWriter writer)
+		public async Task Output(StreamWriter writer, OutputUnit outputUnit)
 		{
 			// とりあえずの手抜き実装．
 			foreach (var series in MyData)
 			{
 				// ヘッダ出力
-				await writer.WriteLineAsync($"# {series.AxisName}, yobs");
+				string y_caption = outputUnit == OutputUnit.CountRate ? "yobs[cps]" : "yobs";
+				string header_line = $"# {series.AxisName}, {y_caption}";
+				await writer.WriteLineAsync(header_line);
 				foreach (var x in series.Keys)
 				{
-					await writer.WriteLineAsync($"{x:0.000000e+000},{series[x].SubstantialCount:0.000000e+000}");
+					string line;
+					if (outputUnit == OutputUnit.CountRate)
+					{
+						line = $"{x:0.000000e+000},{series[x].SubstantialCount / series.DwellTime:0.000000e+000}";
+					}
+					else
+					{
+						line = $"{x:0.000000e+000},{series[x].SubstantialCount:0.000000e+000}";
+					}
+					await writer.WriteLineAsync(line);
 				}
 			}
 
 		}
 
-		public async Task OutputTo(string destination)
+		public async Task OutputTo(string destination, OutputUnit outputUnit)
 		{
 			using (var stream = new FileStream(destination, FileMode.Create))
 			{
 				using (var writer = new StreamWriter(stream, Encoding.UTF8))
 				{
-					await Output(writer);
+					await Output(writer, outputUnit);
 				}
 			}
+		}
+
+
+		public enum OutputUnit
+		{
+			/// <summary>
+			/// カウント数を出力します．
+			/// </summary>
+			Count,
+			/// <summary>
+			/// カウント率を出力します．
+			/// </summary>
+			CountRate
 		}
 
 
@@ -257,13 +300,29 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 			{
 				foreach (var source in dialog.FileNames)
 				{
-					await LoadFrom(source);
+					try
+					{
+						await LoadFrom(source);
 
-					Path.GetFileNameWithoutExtension(source);
-					var destination = $"{Path.Combine(Path.GetDirectoryName(source), Path.GetFileNameWithoutExtension(source) + ".csv")}";
-					await OutputTo(destination);
-
-					Initialize();
+						Path.GetFileNameWithoutExtension(source);
+						var destination = $"{Path.Combine(Path.GetDirectoryName(source), Path.GetFileNameWithoutExtension(source) + ".csv")}";
+						try
+						{
+							await OutputTo(destination, radioButtonCps.IsChecked == true ? OutputUnit.CountRate : OutputUnit.Count);
+						}
+						catch (Exception ex)
+						{
+							MessageBox.Show($"ファイル {destination} の出力中に，次のエラーが発生しました．：{ex.Message}");
+						}
+					}
+					catch (RasFormatException ex)
+					{
+						MessageBox.Show($"ファイル {source} の読み込み中に，次のエラーが発生しました．：{ex.Message}");
+					}
+					finally
+					{
+						Initialize();
+					}
 				}
 			}
 		}
@@ -331,4 +390,16 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 	{
 		public static RoutedCommand LoadCommand = new RoutedCommand();
 	}
+
+	[System.Serializable]
+	public class RasFormatException : Exception
+	{
+		public RasFormatException() { }
+		public RasFormatException(string message) : base(message) { }
+		public RasFormatException(string message, Exception inner) : base(message, inner) { }
+		protected RasFormatException(
+		System.Runtime.Serialization.SerializationInfo info,
+		System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+	}
+
 }
