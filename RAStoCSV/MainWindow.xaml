@@ -9,17 +9,22 @@
 	<Window.CommandBindings>
 		<CommandBinding Command="{x:Static local:Commands.LoadCommand}"
 										Executed="Load_Executed"/>
+		<CommandBinding Command="{x:Static local:Commands.SelectFolderCommand}"
+										Executed="SelectFolder_Executed"/>
 	</Window.CommandBindings>
 	<Grid>
 		<TabControl HorizontalAlignment="Left" Height="378" Margin="10,28,0,0" VerticalAlignment="Top" Width="566">
 			<TabItem Header="ファイルを選択">
-				<Grid Background="#FFE5E5E5">
-					<Button Content="読み込む" HorizontalAlignment="Left" Height="61" Margin="49,38,0,0" VerticalAlignment="Top" Width="262"
+				<Grid Background="#FFFFFFFF">
+					<Button Content="ファイルを選択する" HorizontalAlignment="Left" Height="61" Margin="49,38,0,0" VerticalAlignment="Top" Width="262"
 						Command="{x:Static local:Commands.LoadCommand}"/>
 				</Grid>
 			</TabItem>
 			<TabItem Header="フォルダを選択">
-				<Grid Background="#FFE5E5E5"/>
+				<Grid Background="#FFFFFFFF">
+					<Button Content="フォルダを選択する" HorizontalAlignment="Left" Height="61" Margin="49,38,0,0" VerticalAlignment="Top" Width="262"
+						Command="{x:Static local:Commands.SelectFolderCommand}"/>
+				</Grid>
 			</TabItem>
 		</TabControl>
 		<GroupBox Header="出力単位" HorizontalAlignment="Left" Height="184" Margin="594,30,0,0" VerticalAlignment="Top" Width="155">

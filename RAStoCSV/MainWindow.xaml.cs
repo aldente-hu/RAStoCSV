@@ -13,10 +13,12 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.IO;
 using System.Collections.ObjectModel;
-using Microsoft.Win32;	// for FileDialog.
+using Microsoft.Win32;  // for FileDialog.
 
 namespace HirosakiUniversity.Aldente.RAStoCSV
 {
+
+	#region MainWindowクラス
 	/// <summary>
 	/// MainWindow.xaml の相互作用ロジック
 	/// </summary>
@@ -46,42 +48,8 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 		{
 			_myData.Clear();
 		}
-		
 
-		public async Task ConvertToCsv()
-		{
-
-			string source = string.Empty;
-
-			List<SeriesData> data = new List<SeriesData>();
-
-			#region 読み込む
-			using (StreamReader reader = new StreamReader(source))
-			{
-				await Load(reader);
-			}
-			#endregion
-
-
-			#region 出力する
-
-			string destination = string.Empty;
-
-			using (var stream = new FileStream(destination, FileMode.CreateNew)) {
-				using (var writer = new StreamWriter(stream, Encoding.UTF8))
-				{
-					foreach (var series in MyData)
-					{
-						foreach (var x in series.Keys)
-						{
-							await writer.WriteLineAsync($"{x:0.000000e+000},{series[x]:0.000000e+000}");
-						}
-					}
-				}
-			}
-			#endregion
-
-		}
+		#region 読み込み関連
 
 		#region *データを読み込む(Load)
 		private async Task Load(StreamReader reader)
@@ -210,6 +178,7 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 		}
 		#endregion
 
+		#region *1ファイルからデータを読み込む(LoadFrom)
 		public async Task LoadFrom(string source)
 		{
 			using (StreamReader reader = new StreamReader(source))
@@ -218,6 +187,7 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 			}
 
 		}
+		#endregion
 
 		#region RasReadingState列挙体
 		enum RasReadingState
@@ -241,7 +211,11 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 		}
 		#endregion
 
+		#endregion
 
+		#region 出力関連
+
+		#region *CSVとして出力する(Output)
 		public async Task Output(StreamWriter writer, OutputUnit outputUnit)
 		{
 			// とりあえずの手抜き実装．
@@ -267,7 +241,9 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 			}
 
 		}
+		#endregion
 
+		#region *指定したファイルへ出力する(OutputTo)
 		public async Task OutputTo(string destination, OutputUnit outputUnit)
 		{
 			using (var stream = new FileStream(destination, FileMode.Create))
@@ -278,8 +254,42 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 				}
 			}
 		}
+		#endregion
 
+		#region *RASをCSVに変換する(Convert)
+		public async Task Convert(IEnumerable<string> files)
+		{
+			foreach (var source in files)
+			{
+				try
+				{
+					await LoadFrom(source);
 
+					Path.GetFileNameWithoutExtension(source);
+					var destination = $"{Path.Combine(Path.GetDirectoryName(source), Path.GetFileNameWithoutExtension(source) + ".csv")}";
+					try
+					{
+						await OutputTo(destination, radioButtonCps.IsChecked == true ? OutputUnit.CountRate : OutputUnit.Count);
+					}
+					catch (Exception ex)
+					{
+						MessageBox.Show($"ファイル {destination} の出力中に，次のエラーが発生しました．：{ex.Message}");
+					}
+				}
+				catch (RasFormatException ex)
+				{
+					MessageBox.Show($"ファイル {source} の読み込み中に，次のエラーが発生しました．：{ex.Message}");
+				}
+				finally
+				{
+					Initialize();
+				}
+			}
+
+		}
+		#endregion
+
+		#region OutputUnit列挙体
 		public enum OutputUnit
 		{
 			/// <summary>
@@ -291,42 +301,43 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 			/// </summary>
 			CountRate
 		}
+		#endregion
 
+		#endregion
+
+
+		#region コマンドハンドラ
+
+		private async void SelectFolder_Executed(object sender, ExecutedRoutedEventArgs e)
+		{
+			var dialog = new Aldentea.Wpf.Controls.FolderBrowserDialog
+			{
+				Description = "選択したフォルダ以下にあるすべてのRASファイルをCSV形式にエクスポートします．",
+				DisplaySpecialFolders = Aldentea.Wpf.Controls.SpecialFoldersFlag.MyDocuments
+			};
+
+			if (dialog.ShowDialog() == true)
+			{
+				var files = Directory.EnumerateFiles(dialog.SelectedPath, "*.ras", SearchOption.AllDirectories);
+				await Convert(files);
+			}
+		}
 
 		private async void Load_Executed(object sender, ExecutedRoutedEventArgs e)
 		{
 			var dialog = new OpenFileDialog { Filter = "RASファイル(*.ras)|*.ras", Multiselect = true };
 			if (dialog.ShowDialog() == true)
 			{
-				foreach (var source in dialog.FileNames)
-				{
-					try
-					{
-						await LoadFrom(source);
-
-						Path.GetFileNameWithoutExtension(source);
-						var destination = $"{Path.Combine(Path.GetDirectoryName(source), Path.GetFileNameWithoutExtension(source) + ".csv")}";
-						try
-						{
-							await OutputTo(destination, radioButtonCps.IsChecked == true ? OutputUnit.CountRate : OutputUnit.Count);
-						}
-						catch (Exception ex)
-						{
-							MessageBox.Show($"ファイル {destination} の出力中に，次のエラーが発生しました．：{ex.Message}");
-						}
-					}
-					catch (RasFormatException ex)
-					{
-						MessageBox.Show($"ファイル {source} の読み込み中に，次のエラーが発生しました．：{ex.Message}");
-					}
-					finally
-					{
-						Initialize();
-					}
-				}
+				await Convert(dialog.FileNames);
 			}
 		}
+
+		#endregion
+
+
 	}
+	#endregion
+
 
 	#region CountData構造体
 	public struct CountData
@@ -386,11 +397,15 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 	}
 	#endregion
 
+	#region [static]Commandクラス
 	public static class Commands
 	{
 		public static RoutedCommand LoadCommand = new RoutedCommand();
+		public static RoutedCommand SelectFolderCommand = new RoutedCommand();
 	}
+	#endregion
 
+	#region RasFormatExceptionクラス
 	[System.Serializable]
 	public class RasFormatException : Exception
 	{
@@ -401,5 +416,6 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 		System.Runtime.Serialization.SerializationInfo info,
 		System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
 	}
+	#endregion
 
 }
