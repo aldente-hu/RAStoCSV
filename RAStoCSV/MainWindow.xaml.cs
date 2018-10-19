@@ -365,6 +365,14 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 			if (dialog.ShowDialog() == true)
 			{
 				var files = Directory.EnumerateFiles(dialog.SelectedPath, "*.ras", SearchOption.AllDirectories);
+				int n = files.Count();
+				if (n > 25)
+				{
+					if (MessageBox.Show($"{n} 個のファイルについて処理します．よろしいですか？", "実行確認（ファイルがたくさん）", MessageBoxButton.OKCancel) != MessageBoxResult.OK)
+					{
+						return;
+					}
+				}
 				await Convert(files);
 			}
 		}
