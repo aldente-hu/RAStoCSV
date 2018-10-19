@@ -129,6 +129,14 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 									var step = decimal.Parse(cols[1].Trim('"'));
 									seriesData.ScanStep = step;
 									break;
+								case "*MEAS_SCAN_START":
+									var start = decimal.Parse(cols[1].Trim('"'));
+									seriesData.ScanStart = start;
+									break;
+								case "*MEAS_SCAN_STOP":
+									var stop = decimal.Parse(cols[1].Trim('"'));
+									seriesData.ScanStop = stop;
+									break;
 								case "*RAS_HEADER_START":
 								case "*RAS_INT_START":
 								case "*RAS_INT_END":
@@ -218,26 +226,64 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 		#region *CSVとして出力する(Output)
 		public async Task Output(StreamWriter writer, OutputUnit outputUnit)
 		{
-			// とりあえずの手抜き実装．
-			foreach (var series in MyData)
+
+			var axis_names = MyData.Select(series => series.AxisName).Distinct();
+			// 積算対応する必要があるか？
+			if (MyData.Count() > 1 &&
+					axis_names.Count() == 1 &&
+					MyData.Select(series => series.ScanStep).Distinct().Count() == 1 &&
+					MyData.Select(series => series.ScanStart).Distinct().Count() == 1 &&
+					MyData.Select(series => series.ScanStop).Distinct().Count() == 1)
 			{
-				// ヘッダ出力
-				string y_caption = outputUnit == OutputUnit.CountRate ? "yobs[cps]" : "yobs";
-				string header_line = $"# {series.AxisName}, {y_caption}";
+				// [1]積算対応出力
+
+				string total_caption = outputUnit == OutputUnit.CountRate ? "Total[cps]" : "Total";
+				string header_line = $"# {axis_names.Single()}, {total_caption}";
 				await writer.WriteLineAsync(header_line);
-				foreach (var x in series.Keys)
+
+				// データ出力
+				var keys = MyData.SelectMany(series => series.Keys).OrderBy(pos => pos);
+				foreach (var x in keys)
 				{
-					string line;
+					var counts = MyData.Select(series => series[x].SubstantialCount);
+					var count_rates = MyData.Select(series => series[x].SubstantialCount / series.DwellTime);
 					if (outputUnit == OutputUnit.CountRate)
 					{
-						line = $"{x:0.000000e+000},{series[x].SubstantialCount / series.DwellTime:0.000000e+000}";
+						var total_dwell_time = MyData.Sum(series => series.DwellTime);
+						writer.WriteLine($"{x:0.000000e+000},{counts.Sum()/total_dwell_time:0.000000e+000},{count_rates.Select(y => string.Join(", ", string.Format("0.000000e+000", y)))}");
 					}
 					else
 					{
-						line = $"{x:0.000000e+000},{series[x].SubstantialCount:0.000000e+000}";
+						writer.WriteLine($"{x:0.000000e+000},{counts.Sum():0.000000e+000},{counts.Select(y => string.Join(", ", string.Format("0.000000e+000", y)))}");
 					}
-					await writer.WriteLineAsync(line);
 				}
+			}
+			else
+			{
+				// [2]通常出力
+
+				foreach (var series in MyData)
+				{
+					// ヘッダ出力
+					string y_caption = outputUnit == OutputUnit.CountRate ? "yobs[cps]" : "yobs";
+					string header_line = $"# {series.AxisName}, {y_caption}";
+					await writer.WriteLineAsync(header_line);
+					foreach (var x in series.Keys)
+					{
+						string line;
+						if (outputUnit == OutputUnit.CountRate)
+						{
+							line = $"{x:0.000000e+000},{series[x].SubstantialCount / series.DwellTime:0.000000e+000}";
+						}
+						else
+						{
+							line = $"{x:0.000000e+000},{series[x].SubstantialCount:0.000000e+000}";
+						}
+						await writer.WriteLineAsync(line);
+					}
+					await writer.WriteLineAsync();
+				}
+
 			}
 
 		}
@@ -386,6 +432,16 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 		/// スキャンステップを取得／設定します．単位はdegです．
 		/// </summary>
 		public decimal ScanStep { get; set; }
+
+		/// <summary>
+		/// スキャン開始位置を取得／設定します．
+		/// </summary>
+		public decimal ScanStart { get; set; }
+
+		/// <summary>
+		/// スキャン終了位置を取得／設定します．
+		/// </summary>
+		public decimal ScanStop { get; set; }
 
 		/// <summary>
 		/// 1点あたりの計測時間を取得します．単位はsecです．

@@ -12,7 +12,7 @@ using System.Windows;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("RAStoCSV")]
-[assembly: AssemblyCopyright("Copyright c aldente 2018")]
+[assembly: AssemblyCopyright("Copyright c aldente-hu 2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
