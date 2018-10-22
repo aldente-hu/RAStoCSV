@@ -351,6 +351,63 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 
 		#endregion
 
+		#region InfoLabel関連
+
+		System.Windows.Threading.DispatcherTimer infoTimer;
+
+		void infoTimer_Tick(object sender, EventArgs e)
+		{
+			textBlockInfo.Text = string.Empty;
+			infoTimer.Stop();
+		}
+
+		protected void SayInfo(string message)
+		{
+			textBlockInfo.Text = message;
+			infoTimer.Start();
+		}
+
+
+		#region *ユーザに挨拶(Greet)
+		protected string Greet(DateTime time)
+		{
+			if (time.AddDays(8).DayOfYear <= 2)
+			{
+				return "Happy Holidays!";
+			}
+			else if (time.Hour >= 4 && time.Hour < 12)
+			{
+				return "おはようございます";
+			}
+			else if (time.Hour >= 12 && time.Hour < 19)
+			{
+				return "こんにちは";
+			}
+			else if (time.Hour >= 19)
+			{
+				return "今日もお疲れ様です";
+			}
+			else
+			{
+				return "(=_=) zzz...";
+			}
+		}
+		#endregion
+
+		#endregion
+
+		private void Window_Loaded(object sender, RoutedEventArgs e)
+		{
+			SayInfo(Greet(DateTime.Now));
+		}
+
+		private void Window_Initialized(object sender, EventArgs e)
+		{
+			// infoTimerを初期化．
+			infoTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
+			infoTimer.Tick += new EventHandler(infoTimer_Tick);
+
+		}
 
 		#region コマンドハンドラ
 
@@ -370,10 +427,16 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 				{
 					if (MessageBox.Show($"{n} 個のファイルについて処理します．よろしいですか？", "実行確認（ファイルがたくさん）", MessageBoxButton.OKCancel) != MessageBoxResult.OK)
 					{
+						SayInfo("処理を中止しました．");
 						return;
 					}
 				}
 				await Convert(files);
+				SayInfo("出力処理が完了しました．");
+			}
+			else
+			{
+				SayInfo("処理を中止しました．");
 			}
 		}
 
@@ -383,90 +446,20 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 			if (dialog.ShowDialog() == true)
 			{
 				await Convert(dialog.FileNames);
+				SayInfo("出力処理が完了しました．");
+
+			}
+			else
+			{
+				SayInfo("処理を中止しました．");
 			}
 		}
 
+
 		#endregion
 
-
 	}
-	#endregion
 
-
-	#region CountData構造体
-	public struct CountData
-	{
-		/// <summary>
-		/// カウント数．なぜかdecimal型．
-		/// </summary>
-		decimal Count;
-		/// <summary>
-		/// アッテネータ係数．
-		/// </summary>
-		decimal Factor;
-
-		/// <summary>
-		/// (アッテネータ係数を考慮した)実質的なカウントを取得します．
-		/// </summary>
-		public decimal SubstantialCount
-		{
-			get => Count * Factor;
-		}
-
-		public CountData(decimal count, decimal factor)
-		{
-			this.Count = count;
-			this.Factor = factor;
-		}
-
-
-	}
-	#endregion
-
-	#region SeriesDataクラス
-	public class SeriesData : Dictionary<decimal, CountData>
-	{
-		/// <summary>
-		/// スキャン軸の名前を取得／設定します．
-		/// </summary>
-		public string AxisName { get; set; }
-
-		/// <summary>
-		/// スキャンスピードを取得／設定します．単位はdeg/minです．
-		/// </summary>
-		public decimal ScanSpeed { get; set; }
-
-		/// <summary>
-		/// スキャンステップを取得／設定します．単位はdegです．
-		/// </summary>
-		public decimal ScanStep { get; set; }
-
-		/// <summary>
-		/// スキャン開始位置を取得／設定します．
-		/// </summary>
-		public decimal ScanStart { get; set; }
-
-		/// <summary>
-		/// スキャン終了位置を取得／設定します．
-		/// </summary>
-		public decimal ScanStop { get; set; }
-
-		/// <summary>
-		/// 1点あたりの計測時間を取得します．単位はsecです．
-		/// </summary>
-		public decimal DwellTime
-		{
-			get => 60 * ScanStep / ScanSpeed;
-		}
-	}
-	#endregion
-
-	#region [static]Commandクラス
-	public static class Commands
-	{
-		public static RoutedCommand LoadCommand = new RoutedCommand();
-		public static RoutedCommand SelectFolderCommand = new RoutedCommand();
-	}
 	#endregion
 
 	#region RasFormatExceptionクラス

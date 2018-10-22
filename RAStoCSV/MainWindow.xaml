@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:HirosakiUniversity.Aldente.RAStoCSV"
         mc:Ignorable="d"
-        Title="RASファイルからCSV形式にエクスポート" Height="480" Width="640" FontSize="20" ResizeMode="CanMinimize">
+        Title="RASファイルからCSV形式にエクスポート" Height="480" Width="640" FontSize="20" ResizeMode="CanMinimize"
+				Loaded="Window_Loaded" Initialized="Window_Initialized">
 	<Window.CommandBindings>
 		<CommandBinding Command="{x:Static local:Commands.LoadCommand}"
 										Executed="Load_Executed"/>
@@ -79,6 +80,7 @@
 				<ColumnDefinition Width="Auto" />
 			</Grid.ColumnDefinitions>
 			<StatusBar Grid.Column="0">
+				<TextBlock Name="textBlockInfo" />
 			</StatusBar>
 			<StatusBar Grid.Column="1">
 				<TextBlock Margin="20,0">Version 0.1.0</TextBlock>
