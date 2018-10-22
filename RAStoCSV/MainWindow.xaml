@@ -37,7 +37,8 @@
 			<Button Content="フォルダを選択する" Margin="10"
 							Command="{x:Static local:Commands.SelectFolderCommand}" />
 		</StackPanel>
-		<GroupBox Header="出力単位" VerticalAlignment="Top" HorizontalAlignment="Stretch" Grid.Column="1" Margin="10">
+		<StackPanel Grid.Column="1" >
+		<GroupBox Header="出力単位" VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="10,0">
 			<StackPanel>
 				<StackPanel.Resources>
 					<Style TargetType="RadioButton">
@@ -49,6 +50,20 @@
 				<RadioButton Name="radioButtonCps" Content="カウント率(cps)" />
 			</StackPanel>
 		</GroupBox>
+				<GroupBox Header="数値表記" HorizontalAlignment="Stretch" Margin="10,0"
+									RadioButton.Checked="RadioButtonDecimalFormat_Checked">
+					<StackPanel>
+						<StackPanel.Resources>
+							<Style TargetType="RadioButton">
+								<Setter Property="Margin" Value="10,5,30,5" />
+								<Setter Property="VerticalContentAlignment" Value="Center" />
+							</Style>
+						</StackPanel.Resources>
+						<RadioButton Name="radioButtonExponential" Content="指数表記" IsChecked="True" />
+						<RadioButton Name="radioButtonFixed" Content="固定小数点" />
+					</StackPanel>
+				</GroupBox>
+			</StackPanel>
 		</Grid>
 				<FlowDocumentScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
 			<FlowDocument FontSize="14" LineHeight="14">

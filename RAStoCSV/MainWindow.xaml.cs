@@ -33,6 +33,15 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 		}
 		ObservableCollection<SeriesData> _myData = new ObservableCollection<SeriesData>();
 
+		/// <summary>
+		/// CSVでの数値の表記フォーマットを取得／設定します．
+		/// </summary>
+		public string DecimalFormat { get; set; }
+
+		// 手抜きっぽいなぁ．
+		const string FORMAT_EXPONENTIAL = "e";
+		const string FORMAT_FIXED = "f3";
+
 		#endregion
 
 
@@ -224,7 +233,7 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 		#region 出力関連
 
 		#region *CSVとして出力する(Output)
-		public async Task Output(StreamWriter writer, OutputUnit outputUnit)
+		public async Task Output(StreamWriter writer, OutputUnit outputUnit, string decimalFormat)
 		{
 
 			var axis_names = MyData.Select(series => series.AxisName).Distinct();
@@ -250,11 +259,11 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 					if (outputUnit == OutputUnit.CountRate)
 					{
 						var total_dwell_time = MyData.Sum(series => series.DwellTime);
-						writer.WriteLine($"{x:0.000000e+000},{counts.Sum()/total_dwell_time:0.000000e+000},{count_rates.Select(y => string.Join(", ", string.Format("0.000000e+000", y)))}");
+						writer.WriteLine($"{x.ToString(DecimalFormat)},{(counts.Sum()/total_dwell_time).ToString(DecimalFormat)},{count_rates.Select(y => string.Join(", ", string.Format(DecimalFormat, y)))}");
 					}
 					else
 					{
-						writer.WriteLine($"{x:0.000000e+000},{counts.Sum():0.000000e+000},{counts.Select(y => string.Join(", ", string.Format("0.000000e+000", y)))}");
+						writer.WriteLine($"{x.ToString(DecimalFormat)},{counts.Sum().ToString(decimalFormat)},{counts.Select(y => string.Join(", ", string.Format(DecimalFormat, y)))}");
 					}
 				}
 			}
@@ -273,11 +282,11 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 						string line;
 						if (outputUnit == OutputUnit.CountRate)
 						{
-							line = $"{x:0.000000e+000},{series[x].SubstantialCount / series.DwellTime:0.000000e+000}";
+							line = $"{x.ToString(DecimalFormat)},{(series[x].SubstantialCount / series.DwellTime).ToString(DecimalFormat)}";
 						}
 						else
 						{
-							line = $"{x:0.000000e+000},{series[x].SubstantialCount:0.000000e+000}";
+							line = $"{x.ToString(DecimalFormat)},{series[x].SubstantialCount.ToString(DecimalFormat)}";
 						}
 						await writer.WriteLineAsync(line);
 					}
@@ -290,13 +299,13 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 		#endregion
 
 		#region *指定したファイルへ出力する(OutputTo)
-		public async Task OutputTo(string destination, OutputUnit outputUnit)
+		public async Task OutputTo(string destination, OutputUnit outputUnit, string decimalFormat)
 		{
 			using (var stream = new FileStream(destination, FileMode.Create))
 			{
 				using (var writer = new StreamWriter(stream, Encoding.UTF8))
 				{
-					await Output(writer, outputUnit);
+					await Output(writer, outputUnit, decimalFormat);
 				}
 			}
 		}
@@ -315,7 +324,7 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 					var destination = $"{Path.Combine(Path.GetDirectoryName(source), Path.GetFileNameWithoutExtension(source) + ".csv")}";
 					try
 					{
-						await OutputTo(destination, radioButtonCps.IsChecked == true ? OutputUnit.CountRate : OutputUnit.Count);
+						await OutputTo(destination, radioButtonCps.IsChecked == true ? OutputUnit.CountRate : OutputUnit.Count, this.DecimalFormat);
 					}
 					catch (Exception ex)
 					{
@@ -403,10 +412,24 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 
 		private void Window_Initialized(object sender, EventArgs e)
 		{
+			radioButtonExponential.IsChecked = true;
+			//DecimalFormat = FORMAT_EXPONENTIAL;
 			// infoTimerを初期化．
 			infoTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
 			infoTimer.Tick += new EventHandler(infoTimer_Tick);
 
+		}
+
+		private void RadioButtonDecimalFormat_Checked(object sender, RoutedEventArgs e)
+		{
+			if (radioButtonExponential.IsChecked == true)
+			{
+				this.DecimalFormat = FORMAT_EXPONENTIAL;
+			}
+			else if (radioButtonFixed.IsChecked == true)
+			{
+				this.DecimalFormat = FORMAT_FIXED;
+			}
 		}
 
 		#region コマンドハンドラ
@@ -457,6 +480,7 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 
 
 		#endregion
+
 
 	}
 
