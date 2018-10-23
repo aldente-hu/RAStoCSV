@@ -101,7 +101,7 @@
 				<TextBlock Name="textBlockInfo" />
 			</StatusBar>
 			<StatusBar Grid.Column="1">
-				<TextBlock Margin="20,0">Version 0.1.0</TextBlock>
+				<TextBlock Margin="20,0">Version 0.1.1</TextBlock>
 			</StatusBar>
 
 		</Grid>
