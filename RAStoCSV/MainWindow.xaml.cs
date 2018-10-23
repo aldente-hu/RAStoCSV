@@ -63,8 +63,9 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 
 
 		#region *RASをCSVに変換する(Convert)
-		public async Task Convert(IEnumerable<string> files)
+		public async Task<int> Convert(IEnumerable<string> files)
 		{
+			int succeeded = 0;
 			foreach (var source in files)
 			{
 				try
@@ -76,6 +77,7 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 					try
 					{
 						await MyData.OutputTo(destination, radioButtonCps.IsChecked == true ? OutputUnit.CountRate : OutputUnit.Count, this.DecimalFormat);
+						succeeded += 1;
 					}
 					catch (Exception ex)
 					{
@@ -91,7 +93,7 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 					Initialize();
 				}
 			}
-
+			return succeeded;
 		}
 		#endregion
 
@@ -183,16 +185,18 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 			{
 				var files = Directory.EnumerateFiles(dialog.SelectedPath, "*.ras", SearchOption.AllDirectories);
 				int n = files.Count();
-				if (n > 25)
+				if (n > 20)
 				{
-					if (MessageBox.Show($"{n} 個のファイルについて処理します．よろしいですか？", "実行確認（ファイルがたくさん）", MessageBoxButton.OKCancel) != MessageBoxResult.OK)
+					if (MessageBox.Show(
+						$"{n} 個のファイルについて処理します．よろしいですか？", "実行確認（ファイルがたくさん）",
+						MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
 					{
 						SayInfo("処理を中止しました．");
 						return;
 					}
 				}
-				await Convert(files);
-				SayInfo("出力処理が完了しました．");
+				int succeeded = await Convert(files);
+				SayInfo($"出力処理が完了しました．({succeeded}/{files.Count()})");
 			}
 			else
 			{
@@ -205,8 +209,9 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 			var dialog = new OpenFileDialog { Filter = "RASファイル(*.ras)|*.ras", Multiselect = true };
 			if (dialog.ShowDialog() == true)
 			{
-				await Convert(dialog.FileNames);
-				SayInfo("出力処理が完了しました．");
+				var files = dialog.FileNames;
+				var succeeded = await Convert(files);
+				SayInfo($"出力処理が完了しました．({succeeded}/{files.Count()})");
 
 			}
 			else

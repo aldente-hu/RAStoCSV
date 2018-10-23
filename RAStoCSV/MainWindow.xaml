@@ -85,7 +85,10 @@
 								<Paragraph>RASファイルが複数の測定データを含む場合は，同じファイルの中に空行を挟んで出力します．
 									ただし，データが同じ範囲での積算っぽい場合は，まとめて出力します．</Paragraph>
 							</ListItem>
-						</List>
+					<ListItem>
+						<Paragraph>極点測定のデータは，（とりあえず）1次元テーブルとして出力します．</Paragraph>
+					</ListItem>
+				</List>
 					</FlowDocument>
 				</FlowDocumentScrollViewer>
 

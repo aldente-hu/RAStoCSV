@@ -42,6 +42,16 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 	public class SeriesData : Dictionary<decimal, CountData>
 	{
 		/// <summary>
+		/// 極点測定のデータかどうかを示す値を取得／設定します．
+		/// </summary>
+		public bool IsPoleFigure { get; set; }
+
+		/// <summary>
+		/// 極点測定の場合のχ(仰角)の値を取得／設定します．
+		/// </summary>
+		public decimal Chi { get; set; }
+
+		/// <summary>
 		/// スキャン軸の名前を取得／設定します．
 		/// </summary>
 		public string AxisName { get; set; }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -115,6 +114,19 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 									var stop = decimal.Parse(cols[1].Trim('"'));
 									seriesData.ScanStop = stop;
 									break;
+								case "*FILE_DATA_TYPE":
+									var data_type = cols[1].Trim('"');
+									if (data_type == "RAS_3DE_POLEFIG")
+									{
+										// 極点測定だよ！
+										seriesData.IsPoleFigure = true;
+									}
+									break;
+								case "*MEAS_COND_AXIS_POSITION-3":
+									// ※とりあえず決め打ちにしておく．
+									var chi = decimal.Parse(cols[1].Trim('"'));
+									seriesData.Chi = chi;
+									break;
 								case "*RAS_HEADER_START":
 								case "*RAS_INT_START":
 								case "*RAS_INT_END":
@@ -201,7 +213,7 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 
 
 
-		#region 出力関係
+		#region 出力関連
 
 		#region *指定したファイルへ出力する(OutputTo)
 		public async Task OutputTo(string destination, OutputUnit outputUnit, string decimalFormat)
@@ -221,21 +233,29 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 		public async Task Output(StreamWriter writer, OutputUnit outputUnit, string decimalFormat)
 		{
 
-			var axis_names = SeriesCollection.Select(series => series.AxisName).Distinct();
-			// 積算対応する必要があるか？
-			if (SeriesCollection.Count() > 1 &&
-					axis_names.Count() == 1 &&
-					SeriesCollection.Select(series => series.ScanStep).Distinct().Count() == 1 &&
-					SeriesCollection.Select(series => series.ScanStart).Distinct().Count() == 1 &&
-					SeriesCollection.Select(series => series.ScanStop).Distinct().Count() == 1)
+			if (SeriesCollection.All(series => series.IsPoleFigure))
 			{
-				// [1]積算対応出力
-				await OutputCumulation(writer, axis_names.Single(), outputUnit, decimalFormat);
+				// 極点測定データとして出力．
+				await OutputPoleFigure(writer, outputUnit, decimalFormat);
 			}
 			else
 			{
-				// [2]通常出力
-				await OutputNormal(writer, outputUnit, decimalFormat);
+				var axis_names = SeriesCollection.Select(series => series.AxisName).Distinct();
+				// 積算対応する必要があるか？
+				if (SeriesCollection.Count() > 1 &&
+						axis_names.Count() == 1 &&
+						SeriesCollection.Select(series => series.ScanStep).Distinct().Count() == 1 &&
+						SeriesCollection.Select(series => series.ScanStart).Distinct().Count() == 1 &&
+						SeriesCollection.Select(series => series.ScanStop).Distinct().Count() == 1)
+				{
+					// [1]積算対応出力
+					await OutputCumulation(writer, axis_names.Single(), outputUnit, decimalFormat);
+				}
+				else
+				{
+					// [2]通常出力
+					await OutputNormal(writer, outputUnit, decimalFormat);
+				}
 			}
 
 		}
@@ -288,6 +308,37 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 				else
 				{
 					writer.WriteLine($"{x.ToString(decimalFormat)},{counts.Sum().ToString(decimalFormat)},{counts.Select(y => string.Join(", ", string.Format(decimalFormat, y)))}");
+				}
+			}
+
+		}
+
+		public async Task OutputPoleFigure(StreamWriter writer, OutputUnit outputUnit, string decimalFormat)
+		{
+			// とりあえず1次元テーブルで出力してみる．
+			// ※2次元テーブル出力の実装は後で考える．
+
+			// ヘッダ出力
+			// 軸名はchiとphiで決め打ちする．
+			string y_caption = outputUnit == OutputUnit.CountRate ? "yobs[cps]" : "yobs";
+			string header_line = $"# chi, phi, {y_caption}";
+			await writer.WriteLineAsync(header_line);
+
+			// データ出力
+			foreach (var series in SeriesCollection)
+			{
+				foreach (var x in series.Keys)
+				{
+					string line;
+					if (outputUnit == OutputUnit.CountRate)
+					{
+						line = $"{series.Chi.ToString(decimalFormat)},{x.ToString(decimalFormat)},{(series[x].SubstantialCount / series.DwellTime).ToString(decimalFormat)}";
+					}
+					else
+					{
+						line = $"{series.Chi.ToString(decimalFormat)},{x.ToString(decimalFormat)},{series[x].SubstantialCount.ToString(decimalFormat)}";
+					}
+					await writer.WriteLineAsync(line);
 				}
 			}
 
