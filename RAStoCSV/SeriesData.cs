@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace HirosakiUniversity.Aldente.RAStoCSV
 {
@@ -72,6 +73,7 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 		{
 			get => 60 * ScanStep / ScanSpeed;
 		}
+
 	}
 	#endregion
 

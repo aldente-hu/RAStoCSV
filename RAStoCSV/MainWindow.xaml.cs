@@ -27,11 +27,11 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 
 		#region プロパティ
 
-		public ObservableCollection<SeriesData> MyData
+		public RASData MyData
 		{
 			get => _myData;
 		}
-		ObservableCollection<SeriesData> _myData = new ObservableCollection<SeriesData>();
+		RASData _myData = new RASData();
 
 		/// <summary>
 		/// CSVでの数値の表記フォーマットを取得／設定します．
@@ -58,258 +58,9 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 			_myData.Clear();
 		}
 
-		#region 読み込み関連
-
-		#region *データを読み込む(Load)
-		private async Task Load(StreamReader reader)
-		{
-			var currentState = RasReadingState.Neutral;
-			char[] headerSeparators = new char[] { ' ' };
-
-			var line = await reader.ReadLineAsync();
-			if (line != "*RAS_DATA_START")
-			{
-				// RASデータファイルではない！
-				throw new RasFormatException("RASファイルのフォーマットが不適切です． #000");
-			}
-
-
-			// データ部読み取りモードなら．
-			SeriesData seriesData = new SeriesData();
-			// ※スキャン回数をキーにもつべきか？
-
-			while (!reader.EndOfStream)
-			{
-				line = await reader.ReadLineAsync();
-
-				switch (currentState)
-				{
-					case RasReadingState.Neutral:
-						switch (line)
-						{
-							case "*RAS_HEADER_START":
-								// ヘッダモードへ突入．
-								seriesData = new SeriesData();
-								currentState = RasReadingState.Header;
-								break;
-							case "*RAS_DATA_END":
-								break;
-							default:
-								// 何かオカシイ？
-								throw new RasFormatException("RASファイルのフォーマットが不適切です． #010");
-						}
-						break;
-					case RasReadingState.AfterHeader:
-						switch (line)
-						{
-							case "*RAS_INT_START":
-								// データ部の開始．
-								currentState = RasReadingState.Data;
-								break;
-							default:
-								// 何かオカシイ？
-								throw new RasFormatException("RASファイルのフォーマットが不適切です． #011");
-						}
-						break;
-					case RasReadingState.Header:
-						var cols = line.Split(headerSeparators);
-						try
-						{
-							switch (cols.First())
-							{
-								case "*RAS_HEADER_END":
-									// ヘッダモード終了．
-									currentState = RasReadingState.AfterHeader;
-									break;
-								// 必要なヘッダを読み取る．
-								case "*MEAS_SCAN_AXIS_X_INTERNAL":
-									seriesData.AxisName = cols[1].Trim('"');
-									break;
-								case "*MEAS_SCAN_SPEED":
-									var speed = decimal.Parse(cols[1].Trim('"'));
-									seriesData.ScanSpeed = speed;
-									break;
-								case "*MEAS_SCAN_SPEED_UNIT":
-									// "deg/min"以外にあるのかな？
-									break;
-								//case "*MEAS_SCAN_SPEED_USER":
-								//	break;
-								case "*MEAS_SCAN_STEP":
-									var step = decimal.Parse(cols[1].Trim('"'));
-									seriesData.ScanStep = step;
-									break;
-								case "*MEAS_SCAN_START":
-									var start = decimal.Parse(cols[1].Trim('"'));
-									seriesData.ScanStart = start;
-									break;
-								case "*MEAS_SCAN_STOP":
-									var stop = decimal.Parse(cols[1].Trim('"'));
-									seriesData.ScanStop = stop;
-									break;
-								case "*RAS_HEADER_START":
-								case "*RAS_INT_START":
-								case "*RAS_INT_END":
-								case "*RAS_DATA_END":
-									throw new RasFormatException("RASファイルのフォーマットが不適切です． #013");
-								default:
-									// 興味のないヘッダなので，何もしない．
-									break;
-							}
-						}
-						catch (IndexOutOfRangeException)
-						{
-							throw new RasFormatException("RASファイルのフォーマットが不適切です． #012");
-						}
-						break;
-					case RasReadingState.Data:
-						switch (line)
-						{
-							case "*RAS_INT_END":
-								// データ部の終了．
-								MyData.Add(seriesData);
-								currentState = RasReadingState.Neutral;
-								break;
-							case "*RAS_INT_START":
-							case "*RAS_HEADER_START":
-							case "*RAS_HEADER_END":
-							case "*RAS_DATA_END":
-								throw new RasFormatException("RASファイルのフォーマットが不適切です． #021");
-							default:
-								// データの読み取り
-								cols = line.Split(' ');
-								try
-								{
-									seriesData.Add(Decimal.Parse(cols[0]), new CountData(decimal.Parse(cols[1]), decimal.Parse(cols[2])));
-								}
-								catch
-								{
-									throw new RasFormatException("RASファイルのフォーマットが不適切です． #020");
-								}
-								break;
-						}
-						break;
-				}
-
-			}
-
-		}
-		#endregion
-
-		#region *1ファイルからデータを読み込む(LoadFrom)
-		public async Task LoadFrom(string source)
-		{
-			using (StreamReader reader = new StreamReader(source))
-			{
-				await Load(reader);
-			}
-
-		}
-		#endregion
-
-		#region RasReadingState列挙体
-		enum RasReadingState
-		{
-			/// <summary>
-			/// 初期状態，もしくはデータ読み取り終了後．
-			/// </summary>
-			Neutral,
-			/// <summary>
-			/// ヘッダ読み取り中．
-			/// </summary>
-			Header,
-			/// <summary>
-			/// ヘッダ読み取り後．
-			/// </summary>
-			AfterHeader,
-			/// <summary>
-			/// データ読み取り中．
-			/// </summary>
-			Data
-		}
-		#endregion
-
-		#endregion
 
 		#region 出力関連
 
-		#region *CSVとして出力する(Output)
-		public async Task Output(StreamWriter writer, OutputUnit outputUnit, string decimalFormat)
-		{
-
-			var axis_names = MyData.Select(series => series.AxisName).Distinct();
-			// 積算対応する必要があるか？
-			if (MyData.Count() > 1 &&
-					axis_names.Count() == 1 &&
-					MyData.Select(series => series.ScanStep).Distinct().Count() == 1 &&
-					MyData.Select(series => series.ScanStart).Distinct().Count() == 1 &&
-					MyData.Select(series => series.ScanStop).Distinct().Count() == 1)
-			{
-				// [1]積算対応出力
-
-				string total_caption = outputUnit == OutputUnit.CountRate ? "Total[cps]" : "Total";
-				string header_line = $"# {axis_names.Single()}, {total_caption}";
-				await writer.WriteLineAsync(header_line);
-
-				// データ出力
-				var keys = MyData.SelectMany(series => series.Keys).OrderBy(pos => pos);
-				foreach (var x in keys)
-				{
-					var counts = MyData.Select(series => series[x].SubstantialCount);
-					var count_rates = MyData.Select(series => series[x].SubstantialCount / series.DwellTime);
-					if (outputUnit == OutputUnit.CountRate)
-					{
-						var total_dwell_time = MyData.Sum(series => series.DwellTime);
-						writer.WriteLine($"{x.ToString(DecimalFormat)},{(counts.Sum()/total_dwell_time).ToString(DecimalFormat)},{count_rates.Select(y => string.Join(", ", string.Format(DecimalFormat, y)))}");
-					}
-					else
-					{
-						writer.WriteLine($"{x.ToString(DecimalFormat)},{counts.Sum().ToString(decimalFormat)},{counts.Select(y => string.Join(", ", string.Format(DecimalFormat, y)))}");
-					}
-				}
-			}
-			else
-			{
-				// [2]通常出力
-
-				foreach (var series in MyData)
-				{
-					// ヘッダ出力
-					string y_caption = outputUnit == OutputUnit.CountRate ? "yobs[cps]" : "yobs";
-					string header_line = $"# {series.AxisName}, {y_caption}";
-					await writer.WriteLineAsync(header_line);
-					foreach (var x in series.Keys)
-					{
-						string line;
-						if (outputUnit == OutputUnit.CountRate)
-						{
-							line = $"{x.ToString(DecimalFormat)},{(series[x].SubstantialCount / series.DwellTime).ToString(DecimalFormat)}";
-						}
-						else
-						{
-							line = $"{x.ToString(DecimalFormat)},{series[x].SubstantialCount.ToString(DecimalFormat)}";
-						}
-						await writer.WriteLineAsync(line);
-					}
-					await writer.WriteLineAsync();
-				}
-
-			}
-
-		}
-		#endregion
-
-		#region *指定したファイルへ出力する(OutputTo)
-		public async Task OutputTo(string destination, OutputUnit outputUnit, string decimalFormat)
-		{
-			using (var stream = new FileStream(destination, FileMode.Create))
-			{
-				using (var writer = new StreamWriter(stream, Encoding.UTF8))
-				{
-					await Output(writer, outputUnit, decimalFormat);
-				}
-			}
-		}
-		#endregion
 
 		#region *RASをCSVに変換する(Convert)
 		public async Task Convert(IEnumerable<string> files)
@@ -318,13 +69,13 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 			{
 				try
 				{
-					await LoadFrom(source);
+					await MyData.LoadFrom(source);
 
 					Path.GetFileNameWithoutExtension(source);
 					var destination = $"{Path.Combine(Path.GetDirectoryName(source), Path.GetFileNameWithoutExtension(source) + ".csv")}";
 					try
 					{
-						await OutputTo(destination, radioButtonCps.IsChecked == true ? OutputUnit.CountRate : OutputUnit.Count, this.DecimalFormat);
+						await MyData.OutputTo(destination, radioButtonCps.IsChecked == true ? OutputUnit.CountRate : OutputUnit.Count, this.DecimalFormat);
 					}
 					catch (Exception ex)
 					{
@@ -341,20 +92,6 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 				}
 			}
 
-		}
-		#endregion
-
-		#region OutputUnit列挙体
-		public enum OutputUnit
-		{
-			/// <summary>
-			/// カウント数を出力します．
-			/// </summary>
-			Count,
-			/// <summary>
-			/// カウント率を出力します．
-			/// </summary>
-			CountRate
 		}
 		#endregion
 
