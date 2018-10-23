@@ -233,12 +233,12 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 		public async Task Output(StreamWriter writer, OutputUnit outputUnit, string decimalFormat)
 		{
 
-			if (SeriesCollection.All(series => series.IsPoleFigure))
-			{
-				// 極点測定データとして出力．
-				await OutputPoleFigure(writer, outputUnit, decimalFormat);
-			}
-			else
+			//if (SeriesCollection.All(series => series.IsPoleFigure))
+			//{
+			//	// 極点測定データとして出力．
+			//	await OutputPoleFigure(writer, outputUnit, decimalFormat);
+			//}
+			//else
 			{
 				var axis_names = SeriesCollection.Select(series => series.AxisName).Distinct();
 				// 積算対応する必要があるか？
@@ -295,7 +295,7 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 			await writer.WriteLineAsync(header_line);
 
 			// データ出力
-			var keys = SeriesCollection.SelectMany(series => series.Keys).OrderBy(pos => pos);
+			var keys = SeriesCollection.SelectMany(series => series.Keys).Distinct().OrderBy(pos => pos);
 			foreach (var x in keys)
 			{
 				var counts = SeriesCollection.Select(series => series[x].SubstantialCount);
@@ -303,11 +303,11 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 				if (outputUnit == OutputUnit.CountRate)
 				{
 					var total_dwell_time = SeriesCollection.Sum(series => series.DwellTime);
-					writer.WriteLine($"{x.ToString(decimalFormat)},{(counts.Sum() / total_dwell_time).ToString(decimalFormat)},{count_rates.Select(y => string.Join(", ", string.Format(decimalFormat, y)))}");
+					writer.WriteLine($"{x.ToString(decimalFormat)},{(counts.Sum() / total_dwell_time).ToString(decimalFormat)},{string.Join(",", count_rates.Select(r => r.ToString(decimalFormat)).ToArray())}");
 				}
 				else
 				{
-					writer.WriteLine($"{x.ToString(decimalFormat)},{counts.Sum().ToString(decimalFormat)},{counts.Select(y => string.Join(", ", string.Format(decimalFormat, y)))}");
+					writer.WriteLine($"{x.ToString(decimalFormat)},{counts.Sum().ToString(decimalFormat)},{string.Join(",", counts.Select(c => c.ToString(decimalFormat)).ToArray())}");
 				}
 			}
 
