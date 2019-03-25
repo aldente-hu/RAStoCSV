@@ -215,22 +215,23 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 
 		#region 出力関連
 
+		// (0.1.2) useTotal引数を追加．
 		#region *指定したファイルへ出力する(OutputTo)
-		public async Task OutputTo(string destination, OutputUnit outputUnit, string decimalFormat)
+		public async Task OutputTo(string destination, OutputUnit outputUnit, string decimalFormat, bool useTotal = true)
 		{
 			using (var stream = new FileStream(destination, FileMode.Create))
 			{
 				using (var writer = new StreamWriter(stream, Encoding.UTF8))
 				{
-					await Output(writer, outputUnit, decimalFormat);
+					await Output(writer, outputUnit, decimalFormat, useTotal);
 				}
 			}
 		}
 		#endregion
 
-
+		// (0.1.2) useTotal引数を追加．
 		#region *CSVとして出力する(Output)
-		public async Task Output(StreamWriter writer, OutputUnit outputUnit, string decimalFormat)
+		public async Task Output(StreamWriter writer, OutputUnit outputUnit, string decimalFormat, bool useTotal = true)
 		{
 
 			//if (SeriesCollection.All(series => series.IsPoleFigure))
@@ -242,11 +243,12 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 			{
 				var axis_names = SeriesCollection.Select(series => series.AxisName).Distinct();
 				// 積算対応する必要があるか？
-				if (SeriesCollection.Count() > 1 &&
+				if (useTotal &&
+					(SeriesCollection.Count() > 1 &&
 						axis_names.Count() == 1 &&
 						SeriesCollection.Select(series => series.ScanStep).Distinct().Count() == 1 &&
 						SeriesCollection.Select(series => series.ScanStart).Distinct().Count() == 1 &&
-						SeriesCollection.Select(series => series.ScanStop).Distinct().Count() == 1)
+						SeriesCollection.Select(series => series.ScanStop).Distinct().Count() == 1))
 				{
 					// [1]積算対応出力
 					await OutputCumulation(writer, axis_names.Single(), outputUnit, decimalFormat);

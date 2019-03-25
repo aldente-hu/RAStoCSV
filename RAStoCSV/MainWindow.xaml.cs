@@ -76,7 +76,7 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 					var destination = $"{Path.Combine(Path.GetDirectoryName(source), Path.GetFileNameWithoutExtension(source) + ".csv")}";
 					try
 					{
-						await MyData.OutputTo(destination, radioButtonCps.IsChecked == true ? OutputUnit.CountRate : OutputUnit.Count, this.DecimalFormat);
+						await MyData.OutputTo(destination, radioButtonCps.IsChecked == true ? OutputUnit.CountRate : OutputUnit.Count, this.DecimalFormat, checkBoxUseTotal.IsChecked == true);
 						succeeded += 1;
 					}
 					catch (Exception ex)
