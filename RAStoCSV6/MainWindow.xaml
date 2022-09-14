@@ -81,13 +81,15 @@
 					<ListItem>
 						<Paragraph>指定されたファイルの拡張子を
 							<Italic>.csv</Italic> に変えたファイル名で出力します．
-									同名のファイルがすでに存在する場合は，
-							<Bold>強制的に上書き</Bold> します．
 						</Paragraph>
+								<Paragraph>同名のファイルがすでに存在する場合は，
+									<Bold>強制的に上書き</Bold> します．
+								</Paragraph>
+
 					</ListItem>
 					<ListItem>
-						<Paragraph>RASファイルが複数の測定データを含む場合は，同じファイルの中に空行を挟んで出力します．
-									ただし，データが同じ範囲での積算っぽい場合は，まとめて出力します．[積算を出力する]にチェックがあれば，合計も出力します．</Paragraph>
+						<Paragraph>RASファイルが複数の測定データを含む場合は，同じファイルの中に空行を挟んで出力します．</Paragraph>
+						<Paragraph>ただし，データが同じ範囲での積算っぽい場合は，まとめて出力します．[積算を出力する]にチェックがあれば，合計も出力します．</Paragraph>
 					</ListItem>
 					<!--					<ListItem>
 						<Paragraph>極点測定のデータは，（とりあえず）1次元テーブルとして出力します．</Paragraph>
