@@ -122,10 +122,10 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 										seriesData.IsPoleFigure = true;
 									}
 									break;
-								case "*MEAS_COND_AXIS_POSITION-3":
+								case "*MEAS_3DE_ALPHA_ANGLE":
 									// ※とりあえず決め打ちにしておく．
-									var chi = decimal.Parse(cols[1].Trim('"'));
-									seriesData.Chi = chi;
+									var alpha = decimal.Parse(cols[1].Trim('"'));
+									seriesData.Alpha = alpha;
 									break;
 								case "*RAS_HEADER_START":
 								case "*RAS_INT_START":
@@ -229,17 +229,18 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 		}
 		#endregion
 
+		// (0.2.1) なぜかコメントアウトされていた極点測定出力を復活．
 		// (0.1.2) useTotal引数を追加．
 		#region *CSVとして出力する(Output)
 		public async Task Output(StreamWriter writer, OutputUnit outputUnit, string decimalFormat, bool useTotal = true)
 		{
 
-			//if (SeriesCollection.All(series => series.IsPoleFigure))
-			//{
-			//	// 極点測定データとして出力．
-			//	await OutputPoleFigure(writer, outputUnit, decimalFormat);
-			//}
-			//else
+			if (SeriesCollection.All(series => series.IsPoleFigure))
+			{
+				// 極点測定データとして出力．
+				await OutputPoleFigure(writer, outputUnit, decimalFormat);
+			}
+			else
 			{
 				var axis_names = SeriesCollection.Select(series => series.AxisName).Distinct();
 				// 積算対応する必要があるか？
@@ -315,15 +316,16 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 
 		}
 
+		// (0.2.1) 軸名をalphaとbetaに変更．
 		public async Task OutputPoleFigure(StreamWriter writer, OutputUnit outputUnit, string decimalFormat)
 		{
 			// とりあえず1次元テーブルで出力してみる．
 			// ※2次元テーブル出力の実装は後で考える．
 
 			// ヘッダ出力
-			// 軸名はchiとphiで決め打ちする．
+			// 軸名はalphaとbetaで決め打ちする．
 			string y_caption = outputUnit == OutputUnit.CountRate ? "yobs[cps]" : "yobs";
-			string header_line = $"# chi, phi, {y_caption}";
+			string header_line = $"# alpha, beta, {y_caption}";
 			await writer.WriteLineAsync(header_line);
 
 			// データ出力
@@ -334,11 +336,11 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 					string line;
 					if (outputUnit == OutputUnit.CountRate)
 					{
-						line = $"{series.Chi.ToString(decimalFormat)},{x.ToString(decimalFormat)},{(series[x].SubstantialCount / series.DwellTime).ToString(decimalFormat)}";
+						line = $"{series.Alpha.ToString(decimalFormat)},{x.ToString(decimalFormat)},{(series[x].SubstantialCount / series.DwellTime).ToString(decimalFormat)}";
 					}
 					else
 					{
-						line = $"{series.Chi.ToString(decimalFormat)},{x.ToString(decimalFormat)},{series[x].SubstantialCount.ToString(decimalFormat)}";
+						line = $"{series.Alpha.ToString(decimalFormat)},{x.ToString(decimalFormat)},{series[x].SubstantialCount.ToString(decimalFormat)}";
 					}
 					await writer.WriteLineAsync(line);
 				}

@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <Version>0.2.1</Version>
+    <RootNamespace>HirosakiUniversity.Aldente.RAStoCSV.RAStoCSV6</RootNamespace>
+    <ApplicationIcon>RAStoCSV.ico</ApplicationIcon>
+    <Authors>aldente-hu</Authors>
+    <Copyright>aldente-hu (c) 2022</Copyright>
+    <PackageIcon>RAStoCSV_128x128.png</PackageIcon>
+    <PackageReadmeFile></PackageReadmeFile>
+    <AssemblyName>RAStoCSV</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="RAStoCSV.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\external\RAStoCSV_128x128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RASData\RASData.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="AldenteaFolderTreeView">
+      <HintPath>..\external\AldenteaFolderTreeView.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

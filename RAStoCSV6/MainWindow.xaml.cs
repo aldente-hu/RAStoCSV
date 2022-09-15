@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,20 +13,17 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-using System.IO;
-using System.Collections.ObjectModel;
-using Microsoft.Win32;  // for FileDialog.
+//using System.Windows.Shapes;
 
-namespace HirosakiUniversity.Aldente.RAStoCSV
+
+
+namespace HirosakiUniversity.Aldente.RAStoCSV.RAStoCSV6
 {
-
-	#region MainWindowクラス
 	/// <summary>
-	/// MainWindow.xaml の相互作用ロジック
+	/// Interaction logic for MainWindow.xaml
 	/// </summary>
 	public partial class MainWindow : Window
 	{
-
 		#region プロパティ
 
 		public RASData MyData
@@ -45,18 +44,20 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 		#endregion
 
 
+		// (0.2.1) 数値表記のデフォルトを固定小数点に変更．
 		public MainWindow()
 		{
-			Initialize();
+			_myData.Clear();
+			infoTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
 
 			InitializeComponent();
+
+			// この2行はそれぞれ設定する必要がある（連動はしていない）．
+			DecimalFormat = FORMAT_FIXED;
+			radioButtonFixed.IsChecked = true;
+			//radioButtonExponential.IsChecked = true;
 		}
 
-
-		public void Initialize()
-		{
-			_myData.Clear();
-		}
 
 
 		#region 出力関連
@@ -66,14 +67,13 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 		public async Task<int> Convert(IEnumerable<string> files)
 		{
 			int succeeded = 0;
-			foreach (var source in files)
+			foreach (string source in files)
 			{
 				try
 				{
 					await MyData.LoadFrom(source);
 
-					Path.GetFileNameWithoutExtension(source);
-					var destination = $"{Path.Combine(Path.GetDirectoryName(source), Path.GetFileNameWithoutExtension(source) + ".csv")}";
+					var destination = $"{Path.Combine(Path.GetDirectoryName(source) ?? string.Empty, Path.GetFileNameWithoutExtension(source) + ".csv")}";
 					try
 					{
 						await MyData.OutputTo(destination, radioButtonCps.IsChecked == true ? OutputUnit.CountRate : OutputUnit.Count, this.DecimalFormat, checkBoxUseTotal.IsChecked == true);
@@ -90,7 +90,7 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 				}
 				finally
 				{
-					Initialize();
+					_myData.Clear();
 				}
 			}
 			return succeeded;
@@ -103,7 +103,7 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 
 		System.Windows.Threading.DispatcherTimer infoTimer;
 
-		void infoTimer_Tick(object sender, EventArgs e)
+		void infoTimer_Tick(object? sender, EventArgs e)
 		{
 			textBlockInfo.Text = string.Empty;
 			infoTimer.Stop();
@@ -119,7 +119,7 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 		#region *ユーザに挨拶(Greet)
 		protected string Greet(DateTime time)
 		{
-			if (time.AddDays(8).DayOfYear <= 2)
+			if (time.AddDays(8).DayOfYear <= 2)	// 12/24 or 12/25
 			{
 				return "Happy Holidays!";
 			}
@@ -151,10 +151,7 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 
 		private void Window_Initialized(object sender, EventArgs e)
 		{
-			radioButtonExponential.IsChecked = true;
-			//DecimalFormat = FORMAT_EXPONENTIAL;
 			// infoTimerを初期化．
-			infoTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
 			infoTimer.Tick += new EventHandler(infoTimer_Tick);
 
 		}
@@ -222,23 +219,5 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 
 
 		#endregion
-
-
 	}
-
-	#endregion
-
-	#region RasFormatExceptionクラス
-	[System.Serializable]
-	public class RasFormatException : Exception
-	{
-		public RasFormatException() { }
-		public RasFormatException(string message) : base(message) { }
-		public RasFormatException(string message, Exception inner) : base(message, inner) { }
-		protected RasFormatException(
-		System.Runtime.Serialization.SerializationInfo info,
-		System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
-	}
-	#endregion
-
 }

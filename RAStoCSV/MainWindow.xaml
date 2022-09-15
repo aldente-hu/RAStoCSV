@@ -63,6 +63,7 @@
 						<RadioButton Name="radioButtonFixed" Content="固定小数点" />
 					</StackPanel>
 				</GroupBox>
+				<CheckBox x:Name="checkBoxUseTotal" VerticalContentAlignment="Center">積算を出力する</CheckBox>
 			</StackPanel>
 		</Grid>
 				<FlowDocumentScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
@@ -83,12 +84,12 @@
 					</ListItem>
 							<ListItem>
 								<Paragraph>RASファイルが複数の測定データを含む場合は，同じファイルの中に空行を挟んで出力します．
-									ただし，データが同じ範囲での積算っぽい場合は，まとめて出力します．</Paragraph>
+									ただし，データが同じ範囲での積算っぽい場合は，まとめて出力します．[積算を出力する]にチェックがあれば，合計も出力します．</Paragraph>
 							</ListItem>
-					<ListItem>
+<!--					<ListItem>
 						<Paragraph>極点測定のデータは，（とりあえず）1次元テーブルとして出力します．</Paragraph>
 					</ListItem>
-				</List>
+-->				</List>
 					</FlowDocument>
 				</FlowDocumentScrollViewer>
 
@@ -101,7 +102,7 @@
 				<TextBlock Name="textBlockInfo" />
 			</StatusBar>
 			<StatusBar Grid.Column="1">
-				<TextBlock Margin="20,0">Version 0.1.0</TextBlock>
+				<TextBlock Margin="20,0">Version 0.1.2</TextBlock>
 			</StatusBar>
 
 		</Grid>
