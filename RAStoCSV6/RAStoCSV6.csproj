@@ -5,7 +5,7 @@
     <TargetFramework>net6.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
-    <Version>0.2.0</Version>
+    <Version>0.2.1</Version>
     <RootNamespace>HirosakiUniversity.Aldente.RAStoCSV.RAStoCSV6</RootNamespace>
     <ApplicationIcon>RAStoCSV.ico</ApplicationIcon>
     <Authors>aldente-hu</Authors>

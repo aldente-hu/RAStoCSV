@@ -44,6 +44,7 @@ namespace HirosakiUniversity.Aldente.RAStoCSV.RAStoCSV6
 		#endregion
 
 
+		// (0.2.1) 数値表記のデフォルトを固定小数点に変更．
 		public MainWindow()
 		{
 			_myData.Clear();
@@ -51,9 +52,10 @@ namespace HirosakiUniversity.Aldente.RAStoCSV.RAStoCSV6
 
 			InitializeComponent();
 
-			radioButtonExponential.IsChecked = true;
-			DecimalFormat = FORMAT_EXPONENTIAL;
-
+			// この2行はそれぞれ設定する必要がある（連動はしていない）．
+			DecimalFormat = FORMAT_FIXED;
+			radioButtonFixed.IsChecked = true;
+			//radioButtonExponential.IsChecked = true;
 		}
 
 

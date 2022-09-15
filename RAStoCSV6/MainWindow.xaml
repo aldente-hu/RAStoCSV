@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:HirosakiUniversity.Aldente.RAStoCSV.RAStoCSV6"
         mc:Ignorable="d"
-        Title="RASファイルからCSV形式にエクスポート" Height="480" Width="640" FontSize="20" ResizeMode="CanMinimize"
+        Title="RASファイルからCSV形式にエクスポート" Height="540" Width="640" FontSize="20" ResizeMode="CanMinimize"
 				Loaded="Window_Loaded" Initialized="Window_Initialized">
 	<Window.CommandBindings>
 		<CommandBinding Command="{x:Static local:Commands.LoadCommand}"
@@ -46,8 +46,8 @@
 								<Setter Property="VerticalContentAlignment" Value="Center" />
 							</Style>
 						</StackPanel.Resources>
-						<RadioButton Content="カウント数" IsChecked="True" />
-						<RadioButton Name="radioButtonCps" Content="カウント率(cps)" />
+						<RadioButton Name="radioButtonCps" Content="カウント率(cps)" IsChecked="True" />
+						<RadioButton Name="radioButtonCounts" Content="カウント数" />
 					</StackPanel>
 				</GroupBox>
 				<GroupBox Header="数値表記" HorizontalAlignment="Stretch" Margin="10,0"
@@ -59,8 +59,9 @@
 								<Setter Property="VerticalContentAlignment" Value="Center" />
 							</Style>
 						</StackPanel.Resources>
-						<RadioButton Name="radioButtonExponential" Content="指数表記" IsChecked="True" />
-						<RadioButton Name="radioButtonFixed" Content="固定小数点" />
+						<RadioButton Name="radioButtonFixed" Content="固定小数点"/>
+						<!-- ここ↑でIsChecked=trueと設定すると，RadioButtonDecimalFormat_Checkedハンドラの中でradioButtonExponentialを参照しているので，落ちる．-->
+						<RadioButton Name="radioButtonExponential" Content="指数表記" />
 					</StackPanel>
 				</GroupBox>
 				<CheckBox x:Name="checkBoxUseTotal" VerticalContentAlignment="Center">積算を出力する</CheckBox>
@@ -91,10 +92,10 @@
 						<Paragraph>RASファイルが複数の測定データを含む場合は，同じファイルの中に空行を挟んで出力します．</Paragraph>
 						<Paragraph>ただし，データが同じ範囲での積算っぽい場合は，まとめて出力します．[積算を出力する]にチェックがあれば，合計も出力します．</Paragraph>
 					</ListItem>
-					<!--					<ListItem>
-						<Paragraph>極点測定のデータは，（とりあえず）1次元テーブルとして出力します．</Paragraph>
+					<ListItem>
+						<Paragraph>極点測定にも対応したつもりです．ただしバックグラウンド測定は未対応です．</Paragraph>
 					</ListItem>
--->
+
 				</List>
 			</FlowDocument>
 		</FlowDocumentScrollViewer>
@@ -108,7 +109,7 @@
 				<TextBlock Name="textBlockInfo" />
 			</StatusBar>
 			<StatusBar Grid.Column="1">
-				<TextBlock Margin="20,0">Version 0.2.0</TextBlock>
+				<TextBlock Margin="20,0">Version 0.2.1</TextBlock>
 			</StatusBar>
 
 		</Grid>
