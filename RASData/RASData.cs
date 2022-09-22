@@ -322,15 +322,30 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 			// とりあえず1次元テーブルで出力してみる．
 			// ※2次元テーブル出力の実装は後で考える．
 
-			// ヘッダ出力
-			// 軸名はalphaとbetaで決め打ちする．
-			string y_caption = outputUnit == OutputUnit.CountRate ? "yobs[cps]" : "yobs";
-			string header_line = $"# alpha, beta, {y_caption}";
-			await writer.WriteLineAsync(header_line);
+			// ステップ軸はAlphaで決め打ちする．
+			await Output2dData(writer, outputUnit, decimalFormat, "Alpha");
 
-			// データ出力
+		}
+
+		private async Task Output2dData(StreamWriter writer, OutputUnit outputUnit, string decimalFormat, string step_axis)
+		{
+
+			bool first = true;
+
 			foreach (var series in SeriesCollection)
 			{
+				if (first)
+				{
+					// ヘッダを出力する．
+					{
+						string y_caption = outputUnit == OutputUnit.CountRate ? "yobs[cps]" : "yobs";
+						string header_line = $"# {step_axis}, {series.AxisName}, {y_caption}";
+						await writer.WriteLineAsync(header_line);
+					}
+
+					first = false;
+				}
+				// データ出力
 				foreach (var x in series.Keys)
 				{
 					string line;
@@ -345,7 +360,6 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 					await writer.WriteLineAsync(line);
 				}
 			}
-
 		}
 
 		#endregion
