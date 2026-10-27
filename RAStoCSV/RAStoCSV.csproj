@@ -2,10 +2,10 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
-    <Version>0.2.1</Version>
+    <Version>0.3.0</Version>
     <RootNamespace>HirosakiUniversity.Aldente.RAStoCSV.RAStoCSV6</RootNamespace>
     <ApplicationIcon>RAStoCSV.ico</ApplicationIcon>
     <Authors>aldente-hu</Authors>
