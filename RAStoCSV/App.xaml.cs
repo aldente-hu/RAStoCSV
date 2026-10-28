@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace RAStoCSV6
+namespace HirosakiUniversity.Aldente.RAStoCSV.RAStoCSV6
 {
 	/// <summary>
 	/// Interaction logic for App.xaml

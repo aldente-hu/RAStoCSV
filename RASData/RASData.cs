@@ -4,11 +4,19 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 
 namespace HirosakiUniversity.Aldente.RAStoCSV
 {
 	public class RASData
 	{
+
+		//public const string FORMAT_EXPONENTIAL = "e";
+
+		/// <summary>
+		/// format for x-axis.
+		/// </summary>
+		public const string FORMAT_FIXED = "f3";
 
 		#region プロパティ
 
@@ -215,119 +223,150 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 
 		#region 出力関連
 
-		// (0.1.2) useTotal引数を追加．
-		#region *指定したファイルへ出力する(OutputTo)
-		public async Task OutputTo(string destination, OutputUnit outputUnit, string decimalFormat, bool useTotal = true)
+
+        #region *CSVとして出力する(OutputData)
+        public string OutputData(string cpsFormat, string countFormat, bool useTotal = true)
+        {
+
+            if (SeriesCollection.All(series => series.IsPoleFigure))
+            {
+                // 極点測定データとして出力．
+                return OutputPoleFigureData(cpsFormat, countFormat);
+            }
+            else
+            {
+                var axis_names = SeriesCollection.Select(series => series.AxisName).Distinct();
+                // 積算対応する必要があるか？
+                if (useTotal &&
+                    (SeriesCollection.Count() > 1 &&
+                        axis_names.Count() == 1 &&
+                        SeriesCollection.Select(series => series.ScanStep).Distinct().Count() == 1 &&
+                        SeriesCollection.Select(series => series.ScanStart).Distinct().Count() == 1 &&
+                        SeriesCollection.Select(series => series.ScanStop).Distinct().Count() == 1))
+                {
+                    // [1]積算対応出力
+                    return OutputCumulationData(axis_names.Single(), cpsFormat, countFormat);
+                }
+                else
+                {
+                    // [2]通常出力
+                    return OutputNormalData(cpsFormat, countFormat);
+                }
+            }
+
+        }
+        #endregion
+
+
+
+		public string OutputNormalData(string cpsFormat, string countFormat)
 		{
-			using (var stream = new FileStream(destination, FileMode.Create))
-			{
-				using (var writer = new StreamWriter(stream, Encoding.UTF8))
-				{
-					await Output(writer, outputUnit, decimalFormat, useTotal);
-				}
-			}
-		}
-		#endregion
+			StringBuilder sb = new StringBuilder();
 
-		// (0.2.1) なぜかコメントアウトされていた極点測定出力を復活．
-		// (0.1.2) useTotal引数を追加．
-		#region *CSVとして出力する(Output)
-		public async Task Output(StreamWriter writer, OutputUnit outputUnit, string decimalFormat, bool useTotal = true)
+            foreach (var series in SeriesCollection)
+            {
+                // ヘッダ出力
+                var columns = new List<string> { series.AxisName };
+                if (string.IsNullOrEmpty(cpsFormat) == false)
+                {
+                    columns.Add("yobs[cps]");
+                }
+                if (string.IsNullOrEmpty(countFormat) == false)
+                {
+                    columns.Add("yobs");
+                }
+                string header_line = $"# {string.Join(", ", columns)}";
+                sb.AppendLine(header_line);
+
+                // データ出力
+                foreach (var x in series.Keys)
+                {
+                    List<string> values = new List<string> { x.ToString(FORMAT_FIXED) };
+                    if (string.IsNullOrEmpty(cpsFormat) == false)
+                    {
+                        values.Add((series[x].SubstantialCount / series.DwellTime).ToString(cpsFormat));
+                    }
+                    if (string.IsNullOrEmpty(countFormat) == false)
+                    {
+                        values.Add(series[x].SubstantialCount.ToString(countFormat));
+                    }
+
+                    sb.AppendLine(string.Join(", ", values));
+                }
+                sb.AppendLine();
+            }
+
+            return sb.ToString();
+        }
+
+
+		public string OutputCumulationData(string axisName, string cpsFormat, string countFormat)
 		{
 
-			if (SeriesCollection.All(series => series.IsPoleFigure))
+			// Column1 x
+			// Column2 cps
+			// Column3 Total counts
+			// Column4... each count
+			StringBuilder sb = new StringBuilder();
+
+			// ヘッダ出力
+			var columns = new List<string> { axisName };
+			if (string.IsNullOrEmpty(cpsFormat) == false)
 			{
-				// 極点測定データとして出力．
-				await OutputPoleFigure(writer, outputUnit, decimalFormat);
+				columns.Add("Total[cps]");
 			}
-			else
+			if (string.IsNullOrEmpty(countFormat) == false)
 			{
-				var axis_names = SeriesCollection.Select(series => series.AxisName).Distinct();
-				// 積算対応する必要があるか？
-				if (useTotal &&
-					(SeriesCollection.Count() > 1 &&
-						axis_names.Count() == 1 &&
-						SeriesCollection.Select(series => series.ScanStep).Distinct().Count() == 1 &&
-						SeriesCollection.Select(series => series.ScanStart).Distinct().Count() == 1 &&
-						SeriesCollection.Select(series => series.ScanStop).Distinct().Count() == 1))
-				{
-					// [1]積算対応出力
-					await OutputCumulation(writer, axis_names.Single(), outputUnit, decimalFormat);
-				}
-				else
-				{
-					// [2]通常出力
-					await OutputNormal(writer, outputUnit, decimalFormat);
-				}
+				columns.Add("Total");
 			}
+			string header_line = $"# {string.Join(", ", columns)}";
+			sb.AppendLine(header_line);
 
-		}
-		#endregion
-
-
-		public async Task OutputNormal(StreamWriter writer, OutputUnit outputUnit, string decimalFormat)
-		{
-			foreach (var series in SeriesCollection)
-			{
-				// ヘッダ出力
-				string y_caption = outputUnit == OutputUnit.CountRate ? "yobs[cps]" : "yobs";
-				string header_line = $"# {series.AxisName}, {y_caption}";
-				await writer.WriteLineAsync(header_line);
-				foreach (var x in series.Keys)
-				{
-					string line;
-					if (outputUnit == OutputUnit.CountRate)
-					{
-						line = $"{x.ToString(decimalFormat)},{(series[x].SubstantialCount / series.DwellTime).ToString(decimalFormat)}";
-					}
-					else
-					{
-						line = $"{x.ToString(decimalFormat)},{series[x].SubstantialCount.ToString(decimalFormat)}";
-					}
-					await writer.WriteLineAsync(line);
-				}
-				await writer.WriteLineAsync();
-			}
-
-		}
-
-		public async Task OutputCumulation(StreamWriter writer, string axisName, OutputUnit outputUnit, string decimalFormat)
-		{
-			string total_caption = outputUnit == OutputUnit.CountRate ? "Total[cps]" : "Total";
-			string header_line = $"# {axisName}, {total_caption}";
-			await writer.WriteLineAsync(header_line);
 
 			// データ出力
 			var keys = SeriesCollection.SelectMany(series => series.Keys).Distinct().OrderBy(pos => pos);
 			foreach (var x in keys)
 			{
+				List<string> values = new List<string> { x.ToString(FORMAT_FIXED) };
+
 				var counts = SeriesCollection.Select(series => series[x].SubstantialCount);
-				var count_rates = SeriesCollection.Select(series => series[x].SubstantialCount / series.DwellTime);
-				if (outputUnit == OutputUnit.CountRate)
+				//var count_rates = SeriesCollection.Select(series => series[x].SubstantialCount / series.DwellTime);
+
+				if (string.IsNullOrEmpty(cpsFormat) == false)
 				{
 					var total_dwell_time = SeriesCollection.Sum(series => series.DwellTime);
-					writer.WriteLine($"{x.ToString(decimalFormat)},{(counts.Sum() / total_dwell_time).ToString(decimalFormat)},{string.Join(",", count_rates.Select(r => r.ToString(decimalFormat)).ToArray())}");
+					var total_cps = total_dwell_time > 0 ? counts.Sum() / total_dwell_time : 0;
+					values.Add(total_cps.ToString(cpsFormat));
 				}
-				else
-				{
-					writer.WriteLine($"{x.ToString(decimalFormat)},{counts.Sum().ToString(decimalFormat)},{string.Join(",", counts.Select(c => c.ToString(decimalFormat)).ToArray())}");
-				}
-			}
 
-		}
+				if (string.IsNullOrEmpty(countFormat) == false)
+				{
+					var total_count = counts.Sum();
+					values.Add(total_count.ToString(countFormat));
+					// 各系列のカウントを追加
+					values.AddRange(counts.Select(c => c.ToString(countFormat)));
+                }
+				sb.AppendLine(string.Join(", ", values));
+            }
+
+			return sb.ToString();
+
+        }
 
 		// (0.2.1) 軸名をalphaとbetaに変更．
-		public async Task OutputPoleFigure(StreamWriter writer, OutputUnit outputUnit, string decimalFormat)
-		{
-			// とりあえず1次元テーブルで出力してみる．
-			// ※2次元テーブル出力の実装は後で考える．
+		public string OutputPoleFigureData(string cpsFormat, string countFormat)
+        {
+            // とりあえず1次元テーブルで出力してみる．
+            // ※2次元テーブル出力の実装は後で考える．
+            StringBuilder sb = new StringBuilder();
 
+<<<<<<< HEAD
 			// ステップ軸はAlphaで決め打ちする．
 			await Output2dData(writer, outputUnit, decimalFormat, "Alpha");
 
 		}
 
-		private async Task Output2dData(StreamWriter writer, OutputUnit outputUnit, string decimalFormat, string step_axis)
+		private async Task Output2dData(string cpsFormat, string countFormat, string step_axis)
 		{
 
 			bool first = true;
@@ -361,8 +400,48 @@ namespace HirosakiUniversity.Aldente.RAStoCSV
 				}
 			}
 		}
+=======
+            // Column 1 alpha
+            // Column 2 beta
+            // Column 3 cps
+            // Column 4 count
 
-		#endregion
 
-	}
+            // ヘッダ出力
+            var columns = new List<string> { "alpha", "beta" };
+            if (string.IsNullOrEmpty(cpsFormat) == false)
+            {
+                columns.Add("yobs[cps]");
+            }
+            if (string.IsNullOrEmpty(countFormat) == false)
+            {
+                columns.Add("yobs");
+            }
+            string header_line = $"# {string.Join(", ", columns)}";
+            sb.AppendLine(header_line);
+>>>>>>> 9d58566 (Enable to output both cps and counts.)
+
+            // データ出力
+            foreach (var series in SeriesCollection)
+            {
+                foreach (var x in series.Keys)
+                {
+                    List<string> values = new List<string> { series.Alpha.ToString(FORMAT_FIXED), x.ToString(FORMAT_FIXED) };
+                    if (string.IsNullOrEmpty(cpsFormat) == false)
+                    {
+                        values.Add((series[x].SubstantialCount / series.DwellTime).ToString(cpsFormat));
+                    }
+                    if (string.IsNullOrEmpty(countFormat) == false)
+                    {
+                        values.Add(series[x].SubstantialCount.ToString(countFormat));
+                    }
+                    sb.AppendLine(string.Join(", ", values));
+                }
+            }
+            return sb.ToString();
+        }
+
+        #endregion
+
+    }
 }

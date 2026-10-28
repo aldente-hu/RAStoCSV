@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:HirosakiUniversity.Aldente.RAStoCSV.RAStoCSV6"
         mc:Ignorable="d"
-        Title="RASファイルからCSV形式にエクスポート" Height="540" Width="640" FontSize="20" ResizeMode="CanMinimize"
+        Title="RASファイルからCSV形式にエクスポート" Width="640" FontSize="20" ResizeMode="CanMinimize"
 				Loaded="Window_Loaded" Initialized="Window_Initialized">
 	<Window.CommandBindings>
 		<CommandBinding Command="{x:Static local:Commands.LoadCommand}"
@@ -20,11 +20,15 @@
 			<RowDefinition Height="Auto" />
 		</Grid.RowDefinitions>
 		<Grid Grid.Row="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="*" />
 				<ColumnDefinition Width="Auto" />
 			</Grid.ColumnDefinitions>
-			<StackPanel Grid.Column="0" Margin="10">
+			<StackPanel Grid.Row="0" Margin="10">
 				<StackPanel.Resources>
 					<Style TargetType="Button">
 						<Setter Property="Margin" Value="10" />
@@ -37,33 +41,34 @@
 				<Button Content="フォルダを選択する" Margin="10"
 							Command="{x:Static local:Commands.SelectFolderCommand}" />
 			</StackPanel>
-			<StackPanel Grid.Column="1" >
-				<GroupBox Header="出力単位" VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="10,0">
-					<StackPanel>
-						<StackPanel.Resources>
-							<Style TargetType="RadioButton">
-								<Setter Property="Margin" Value="10,5,30,5" />
-								<Setter Property="VerticalContentAlignment" Value="Center" />
-							</Style>
-						</StackPanel.Resources>
-						<RadioButton Name="radioButtonCps" Content="カウント率(cps)" IsChecked="True" />
-						<RadioButton Name="radioButtonCounts" Content="カウント数" />
-					</StackPanel>
-				</GroupBox>
-				<GroupBox Header="数値表記" HorizontalAlignment="Stretch" Margin="10,0"
-									RadioButton.Checked="RadioButtonDecimalFormat_Checked">
-					<StackPanel>
-						<StackPanel.Resources>
-							<Style TargetType="RadioButton">
-								<Setter Property="Margin" Value="10,5,30,5" />
-								<Setter Property="VerticalContentAlignment" Value="Center" />
-							</Style>
-						</StackPanel.Resources>
-						<RadioButton Name="radioButtonFixed" Content="固定小数点"/>
-						<!-- ここ↑でIsChecked=trueと設定すると，RadioButtonDecimalFormat_Checkedハンドラの中でradioButtonExponentialを参照しているので，落ちる．-->
-						<RadioButton Name="radioButtonExponential" Content="指数表記" />
-					</StackPanel>
-				</GroupBox>
+			<StackPanel Grid.Row="1" Orientation="Horizontal" >
+                <GroupBox Header="カウント数" VerticalAlignment="Top" HorizontalAlignment="Stretch"  Margin="10,0">
+                    <StackPanel>
+                        <StackPanel.Resources>
+                            <Style TargetType="RadioButton">
+                                <Setter Property="Margin" Value="10,5,30,5" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                            </Style>
+                        </StackPanel.Resources>
+                        <RadioButton Name="radioButtonCountFixed" Content="固定小数点" IsChecked="True" />
+                        <RadioButton Name="radioButtonCountExponential" Content="指数表記" />
+                        <RadioButton Name="radioButtonCountNone" Content="出力しない" />
+                    </StackPanel>
+                </GroupBox>
+                <GroupBox Header="カウント率(cps)" VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="10,0">
+                    <StackPanel>
+                        <StackPanel.Resources>
+                            <Style TargetType="RadioButton">
+                                <Setter Property="Margin" Value="10,5,30,5" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                            </Style>
+                        </StackPanel.Resources>
+                        <RadioButton Name="radioButtonCpsFixed" Content="固定小数点" />
+                        <RadioButton Name="radioButtonCpsExponential" Content="指数表記" IsChecked="True" />
+                        <RadioButton Name="radioButtonCpsNone" Content="出力しない" />
+                    </StackPanel>
+                </GroupBox>
+
 				<CheckBox x:Name="checkBoxUseTotal" VerticalContentAlignment="Center">積算を出力する</CheckBox>
 			</StackPanel>
 		</Grid>
@@ -109,7 +114,7 @@
 				<TextBlock Name="textBlockInfo" />
 			</StatusBar>
 			<StatusBar Grid.Column="1">
-				<TextBlock Margin="20,0">Version 0.2.1</TextBlock>
+				<TextBlock Margin="20,0">Version 0.3.0</TextBlock>
 			</StatusBar>
 
 		</Grid>

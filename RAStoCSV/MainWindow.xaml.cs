@@ -17,207 +17,240 @@ using System.Windows.Navigation;
 
 
 
-namespace HirosakiUniversity.Aldente.RAStoCSV.RAStoCSV6
+namespace HirosakiUniversity.Aldente.RAStoCSV
 {
-	/// <summary>
-	/// Interaction logic for MainWindow.xaml
-	/// </summary>
-	public partial class MainWindow : Window
+	//using RASData;
+
+	namespace RAStoCSV6
 	{
-		#region プロパティ
-
-		public RASData MyData
-		{
-			get => _myData;
-		}
-		RASData _myData = new RASData();
-
 		/// <summary>
-		/// CSVでの数値の表記フォーマットを取得／設定します．
+		/// Interaction logic for MainWindow.xaml
 		/// </summary>
-		public string DecimalFormat { get; set; }
-
-		// 手抜きっぽいなぁ．
-		const string FORMAT_EXPONENTIAL = "e";
-		const string FORMAT_FIXED = "f3";
-
-		#endregion
-
-
-		// (0.2.1) 数値表記のデフォルトを固定小数点に変更．
-		public MainWindow()
+		public partial class MainWindow : Window
 		{
-			_myData.Clear();
-			infoTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
+			#region プロパティ
 
-			InitializeComponent();
-
-			// この2行はそれぞれ設定する必要がある（連動はしていない）．
-			DecimalFormat = FORMAT_FIXED;
-			radioButtonFixed.IsChecked = true;
-			//radioButtonExponential.IsChecked = true;
-		}
-
-
-
-		#region 出力関連
-
-
-		#region *RASをCSVに変換する(Convert)
-		public async Task<int> Convert(IEnumerable<string> files)
-		{
-			int succeeded = 0;
-			foreach (string source in files)
+			public RASData MyData
 			{
-				try
-				{
-					await MyData.LoadFrom(source);
+				get => _myData;
+			}
+			RASData _myData = new RASData();
 
-					var destination = $"{Path.Combine(Path.GetDirectoryName(source) ?? string.Empty, Path.GetFileNameWithoutExtension(source) + ".csv")}";
+			/// <summary>
+			/// CSVでの数値の表記フォーマットを取得／設定します．
+			/// </summary>
+			//public string DecimalFormat { get; set; }
+
+			// 手抜きっぽいなぁ．
+			const string FORMAT_EXPONENTIAL = "e";
+			const string FORMAT_FIXED = "f3";
+
+			#endregion
+
+
+			// (0.2.1) 数値表記のデフォルトを固定小数点に変更．
+			public MainWindow()
+			{
+				_myData.Clear();
+				infoTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
+
+				InitializeComponent();
+
+				// この2行はそれぞれ設定する必要がある（連動はしていない）．
+				//DecimalFormat = FORMAT_FIXED;
+				//radioButtonFixed.IsChecked = true;
+				//radioButtonExponential.IsChecked = true;
+			}
+
+
+
+			#region 出力関連
+
+
+			#region *RASをCSVに変換する(Convert)
+			public async Task<int> Convert(IEnumerable<string> files)
+			{
+				int succeeded = 0;
+				foreach (string source in files)
+				{
 					try
 					{
-						await MyData.OutputTo(destination, radioButtonCps.IsChecked == true ? OutputUnit.CountRate : OutputUnit.Count, this.DecimalFormat, checkBoxUseTotal.IsChecked == true);
-						succeeded += 1;
+						await MyData.LoadFrom(source);
+
+						var destination = $"{Path.Combine(Path.GetDirectoryName(source) ?? string.Empty, Path.GetFileNameWithoutExtension(source) + ".csv")}";
+						try
+						{
+							string? cpsFormat = null;
+							if (radioButtonCpsExponential.IsChecked == true)
+							{
+								cpsFormat = "e";
+							}
+							if (radioButtonCpsFixed.IsChecked == true)
+							{
+								cpsFormat = "f3";
+							}
+							string? countFormat = null;
+							if (radioButtonCountExponential.IsChecked == true)
+							{
+								countFormat = "e";
+							}
+							if (radioButtonCountFixed.IsChecked == true)
+							{
+								countFormat = "f3";
+							}
+
+							using (var stream = new FileStream(destination, FileMode.Create))
+							{
+								using (var writer = new StreamWriter(stream, Encoding.UTF8))
+								{
+									await writer.WriteAsync(MyData.OutputData(cpsFormat, countFormat, checkBoxUseTotal.IsChecked == true));
+								}
+							}
+
+							succeeded += 1;
+						}
+						catch (Exception ex)
+						{
+							MessageBox.Show($"ファイル {destination} の出力中に，次のエラーが発生しました．：{ex.Message}");
+						}
 					}
-					catch (Exception ex)
+					catch (RasFormatException ex)
 					{
-						MessageBox.Show($"ファイル {destination} の出力中に，次のエラーが発生しました．：{ex.Message}");
+						MessageBox.Show($"ファイル {source} の読み込み中に，次のエラーが発生しました．：{ex.Message}");
 					}
-				}
-				catch (RasFormatException ex)
-				{
-					MessageBox.Show($"ファイル {source} の読み込み中に，次のエラーが発生しました．：{ex.Message}");
-				}
-				finally
-				{
-					_myData.Clear();
-				}
-			}
-			return succeeded;
-		}
-		#endregion
-
-		#endregion
-
-		#region InfoLabel関連
-
-		System.Windows.Threading.DispatcherTimer infoTimer;
-
-		void infoTimer_Tick(object? sender, EventArgs e)
-		{
-			textBlockInfo.Text = string.Empty;
-			infoTimer.Stop();
-		}
-
-		protected void SayInfo(string message)
-		{
-			textBlockInfo.Text = message;
-			infoTimer.Start();
-		}
-
-
-		#region *ユーザに挨拶(Greet)
-		protected string Greet(DateTime time)
-		{
-			if (time.AddDays(8).DayOfYear <= 2)	// 12/24 or 12/25
-			{
-				return "Happy Holidays!";
-			}
-			else if (time.Hour >= 4 && time.Hour < 12)
-			{
-				return "おはようございます";
-			}
-			else if (time.Hour >= 12 && time.Hour < 19)
-			{
-				return "こんにちは";
-			}
-			else if (time.Hour >= 19)
-			{
-				return "今日もお疲れ様です";
-			}
-			else
-			{
-				return "(=_=) zzz...";
-			}
-		}
-		#endregion
-
-		#endregion
-
-		private void Window_Loaded(object sender, RoutedEventArgs e)
-		{
-			SayInfo(Greet(DateTime.Now));
-		}
-
-		private void Window_Initialized(object sender, EventArgs e)
-		{
-			// infoTimerを初期化．
-			infoTimer.Tick += new EventHandler(infoTimer_Tick);
-
-		}
-
-		private void RadioButtonDecimalFormat_Checked(object sender, RoutedEventArgs e)
-		{
-			if (radioButtonExponential.IsChecked == true)
-			{
-				this.DecimalFormat = FORMAT_EXPONENTIAL;
-			}
-			else if (radioButtonFixed.IsChecked == true)
-			{
-				this.DecimalFormat = FORMAT_FIXED;
-			}
-		}
-
-		#region コマンドハンドラ
-
-		private async void SelectFolder_Executed(object sender, ExecutedRoutedEventArgs e)
-		{
-			var dialog = new Aldentea.Wpf.Controls.FolderBrowserDialog
-			{
-				Description = "選択したフォルダ以下にあるすべてのRASファイルをCSV形式にエクスポートします．",
-				DisplaySpecialFolders = Aldentea.Wpf.Controls.SpecialFoldersFlag.MyDocuments
-			};
-
-			if (dialog.ShowDialog() == true)
-			{
-				var files = Directory.EnumerateFiles(dialog.SelectedPath, "*.ras", SearchOption.AllDirectories);
-				int n = files.Count();
-				if (n > 20)
-				{
-					if (MessageBox.Show(
-						$"{n} 個のファイルについて処理します．よろしいですか？", "実行確認（ファイルがたくさん）",
-						MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
+					finally
 					{
-						SayInfo("処理を中止しました．");
-						return;
+						_myData.Clear();
 					}
 				}
-				int succeeded = await Convert(files);
-				SayInfo($"出力処理が完了しました．({succeeded}/{files.Count()})");
+				return succeeded;
 			}
-			else
+			#endregion
+
+			#endregion
+
+			#region InfoLabel関連
+
+			System.Windows.Threading.DispatcherTimer infoTimer;
+
+			void infoTimer_Tick(object? sender, EventArgs e)
 			{
-				SayInfo("処理を中止しました．");
+				textBlockInfo.Text = string.Empty;
+				infoTimer.Stop();
 			}
+
+			protected void SayInfo(string message)
+			{
+				textBlockInfo.Text = message;
+				infoTimer.Start();
+			}
+
+
+			#region *ユーザに挨拶(Greet)
+			protected string Greet(DateTime time)
+			{
+				if (time.AddDays(8).DayOfYear <= 2) // 12/24 or 12/25
+				{
+					return "Happy Holidays!";
+				}
+				else if (time.Hour >= 4 && time.Hour < 12)
+				{
+					return "おはようございます";
+				}
+				else if (time.Hour >= 12 && time.Hour < 19)
+				{
+					return "こんにちは";
+				}
+				else if (time.Hour >= 19)
+				{
+					return "今日もお疲れ様です";
+				}
+				else
+				{
+					return "(=_=) zzz...";
+				}
+			}
+			#endregion
+
+			#endregion
+
+			private void Window_Loaded(object sender, RoutedEventArgs e)
+			{
+				SayInfo(Greet(DateTime.Now));
+			}
+
+			private void Window_Initialized(object sender, EventArgs e)
+			{
+				// infoTimerを初期化．
+				infoTimer.Tick += new EventHandler(infoTimer_Tick);
+
+			}
+
+			private void RadioButtonDecimalFormat_Checked(object sender, RoutedEventArgs e)
+			{
+				/*
+				if (radioButtonExponential.IsChecked == true)
+				{
+					this.DecimalFormat = FORMAT_EXPONENTIAL;
+				}
+				else if (radioButtonFixed.IsChecked == true)
+				{
+					this.DecimalFormat = FORMAT_FIXED;
+				}
+				*/
+			}
+
+			#region コマンドハンドラ
+
+			private async void SelectFolder_Executed(object sender, ExecutedRoutedEventArgs e)
+			{
+				var dialog = new Aldentea.Wpf.Controls.FolderBrowserDialog
+				{
+					Description = "選択したフォルダ以下にあるすべてのRASファイルをCSV形式にエクスポートします．",
+					DisplaySpecialFolders = Aldentea.Wpf.Controls.SpecialFoldersFlag.MyDocuments
+				};
+
+				if (dialog.ShowDialog() == true)
+				{
+					var files = Directory.EnumerateFiles(dialog.SelectedPath, "*.ras", SearchOption.AllDirectories);
+					int n = files.Count();
+					if (n > 20)
+					{
+						if (MessageBox.Show(
+							$"{n} 個のファイルについて処理します．よろしいですか？", "実行確認（ファイルがたくさん）",
+							MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
+						{
+							SayInfo("処理を中止しました．");
+							return;
+						}
+					}
+					int succeeded = await Convert(files);
+					SayInfo($"出力処理が完了しました．({succeeded}/{files.Count()})");
+				}
+				else
+				{
+					SayInfo("処理を中止しました．");
+				}
+			}
+
+			private async void Load_Executed(object sender, ExecutedRoutedEventArgs e)
+			{
+				var dialog = new OpenFileDialog { Filter = "RASファイル(*.ras)|*.ras", Multiselect = true };
+				if (dialog.ShowDialog() == true)
+				{
+					var files = dialog.FileNames;
+					var succeeded = await Convert(files);
+					SayInfo($"出力処理が完了しました．({succeeded}/{files.Count()})");
+
+				}
+				else
+				{
+					SayInfo("処理を中止しました．");
+				}
+			}
+
+
+			#endregion
 		}
-
-		private async void Load_Executed(object sender, ExecutedRoutedEventArgs e)
-		{
-			var dialog = new OpenFileDialog { Filter = "RASファイル(*.ras)|*.ras", Multiselect = true };
-			if (dialog.ShowDialog() == true)
-			{
-				var files = dialog.FileNames;
-				var succeeded = await Convert(files);
-				SayInfo($"出力処理が完了しました．({succeeded}/{files.Count()})");
-
-			}
-			else
-			{
-				SayInfo("処理を中止しました．");
-			}
-		}
-
-
-		#endregion
 	}
 }

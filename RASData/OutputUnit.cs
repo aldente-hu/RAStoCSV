@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace HirosakiUniversity.Aldente.RAStoCSV
 {
-
+	// (0.3.0) obsolete
 	#region OutputUnit列挙体
 	public enum OutputUnit
 	{
